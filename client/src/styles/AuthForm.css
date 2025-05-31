@@ -1,0 +1,97 @@
+.form-container {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    text-align: center;
+    border: 1px solid #237ac3; /* Subtle border */
+    border-radius: 10px; /* Rounded corners */
+    width: 90%; /* Full width by default */
+    max-width: 400px; /* Adjust this to make the form smaller or larger */
+   
+    color: white;
+    margin: 50px auto; /* Centering */
+    box-shadow: 0px 4px 10px rgba(255, 255, 255, 0.1); /* Soft glow */
+    transition: transform 0.3s ease-in-out;
+}
+
+.form-wrapper {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    min-height: calc(100vh - 120px); /* Adjust for navbar + footer height */
+    width: 100vw; /* Full viewport width */
+    padding: 50px; /* Add padding for spacing */
+}
+
+/* Form Title */
+h1 {
+    font-size: clamp(32px, 5vw, 80px); /* Responsive font size */
+    font-weight: bold;
+    color: white; /* White */
+    margin-bottom: 20px;
+}
+
+/* Form Fields */
+.form-group {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+    width: 100%;
+    margin-bottom: 15px;
+}
+
+.form-group label {
+    font-size: .8rem;
+    font-weight: 600;
+    margin-bottom: 5px;
+    color: #ddd; /* Light grey */
+}
+
+.form-group input {
+    width: 300px;
+    padding: 10px;
+    border-radius: 5px;
+    border: 1px solid #3a3a3a;
+    background-color: #000;
+    color: white;
+    font-size: 0.8rem;
+    height: 40px;
+}
+
+.btn-signup {
+    color: white;
+    text-decoration: none;
+    font-size: 0.8rem;
+    padding: 8px 16px;
+    width: 100px;
+}
+
+.btn-signup:hover {
+    background-color: #237ac3;
+    transform: scale(1.05);
+}
+
+/* Responsive styles */
+@media screen and (max-width: 768px) {
+    .btn-signup {
+        font-size: 0.7rem;
+        padding: 6px 12px;
+    }
+}
+
+.google-login-wrapper {
+    display: inline-block;
+    padding: 10px;
+    transition: transform 0.3s ease, box-shadow 0.3s ease;
+}
+
+.google-login-wrapper:hover {
+    transform: scale(1.05); /* Slightly enlarge the button */
+    box-shadow: 0 4px 10px rgba(0, 0, 0, 0.2); /* Add a subtle shadow on hover */
+    cursor: pointer; /* Change the cursor to a pointer to indicate it's clickable */
+}
+
+.google-login-wrapper .google-login-button {
+    width: 100%;
+}

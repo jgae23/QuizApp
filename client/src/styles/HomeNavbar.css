@@ -1,0 +1,87 @@
+.navbar {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 10px 20px;
+    color: white;
+    max-height: 60px;
+  }
+  
+  .logo {
+    display: flex;
+    align-items: center;
+    height: 100px;
+    padding-bottom: 50px;
+    margin-left: -30px;
+  }
+
+  .logo img {
+    width: 240px;
+    height: auto;
+  }
+
+  .nav-right {
+    display: flex;
+    align-items: center;
+    justify-content: flex-end;
+    margin-top: -40px;
+    gap: 20px; /* Adjust the gap between icon and links */
+  }
+
+  .welcome-message {
+    white-space: nowrap;          /* Prevent awkward text wrapping */
+    overflow: hidden;
+    text-overflow: ellipsis;      /* Show "..." if too long */
+    max-width: 200px;             /* Adjust to fit your layout */
+    margin: auto;
+  }
+  
+  @media screen and (max-width: 768px) {
+    .welcome-message {
+      display: none;              /* Optionally hide it on small screens */
+    }
+  }
+  
+
+  .icon {
+    padding-bottom: 13px;
+  }
+
+  .icon img {
+    width: 38px;
+    height: auto;
+  }
+  
+  .nav-links {
+    list-style: none;
+    display: flex;
+    gap: 10px;
+    margin-right: -10px;
+  }
+  
+  .bordered-link {
+    color: white;
+    text-decoration: none;
+    font-size: 0.8rem;
+    padding: 8px 16px;
+    border: 2px solid #237ac3;
+    border-radius: 5px;
+    transition: all 0.3s ease-in-out;
+  }
+  
+  .bordered-link:hover {
+    background-color: #237ac3;
+    color: black;
+  }
+
+  @media screen and (max-width: 768px) {
+    .bordered-link {
+      font-size: 0.7rem;
+      padding: 6px 12px;
+    }
+  }
+
+  .nav-links li a:hover {
+    color: #fff;
+  }
+  

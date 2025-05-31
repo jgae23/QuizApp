@@ -1,0 +1,15 @@
+html, body {
+    background-color: var(--bs-dark);
+    color: white; /* Ensures text is readable */
+    margin: 0;
+    padding: 0;
+    height: 100%;
+  }
+  
+  #root {
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+  }
+  
+  
