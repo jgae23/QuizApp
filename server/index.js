@@ -33,7 +33,7 @@ const isDev = process.env.NODE_ENV !== 'production';
 
 // Improve CORS configuration
 app.use(cors({
-  origin: ['http://localhost:3000', 'https://localhost:3000'],
+  origin: ['http://localhost:3000', 'https://localhost:3000', 'https://learnwithai.world'],
   methods: ['GET', 'POST', 'PUT', 'DELETE'],
   allowedHeaders: ['Content-Type', 'Authorization'],
   credentials: true
