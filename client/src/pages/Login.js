@@ -16,7 +16,7 @@ const Login = () => {
 
         // Perform local authentication logic
         try {
-            const response = await fetch("https://localhost:3001/api/auth/login", {
+            const response = await fetch("https://quiz-backend-5rjf.onrender.com/api/auth/login", {
                 method: "POST",
                 headers: { "Content-Type": "application/json" },
                 body: JSON.stringify({ email, password }),
@@ -46,7 +46,7 @@ const Login = () => {
     const handleGoogleSuccess = (credentialResponse) => {
         const token = credentialResponse.credential;
 
-        fetch("https://localhost:3001/api/auth/google", {
+        fetch("https://quiz-backend-5rjf.onrender.com/api/auth/google", {
             method: "POST",
             headers: { "Content-Type": "application/json" },
             body: JSON.stringify({ credential: token }),

@@ -15,7 +15,7 @@ const Signup = () => {
         event.preventDefault(); // Prevent page refresh
 
         try {
-            const response = await fetch("https://localhost:3001/api/auth/signup", {
+            const response = await fetch("https://quiz-backend-5rjf.onrender.com/api/auth/signup", {
                 method: "POST",
                 headers: { "Content-Type": "application/json" },
                 body: JSON.stringify({ userName, email, password }),
@@ -47,7 +47,7 @@ const Signup = () => {
     const handleGoogleSuccess = (credentialResponse) => {
         const token = credentialResponse.credential;
 
-        fetch("https://localhost:3001/api/auth/google", {
+        fetch("https://quiz-backend-5rjf.onrender.com/api/auth/google", {
             method: "POST",
             headers: { "Content-Type": "application/json" },
             body: JSON.stringify({ credential: token }),
