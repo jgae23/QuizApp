@@ -5,7 +5,6 @@ import { fileURLToPath } from "url";
 import cors from "cors";
 import https from 'https';
 import fs from 'fs';
-import axios from 'axios';
 import { syncModels } from "./models/index.js";
 import { generateQuiz } from './routes/aiQuiz.js';
 import express from 'express';
@@ -29,6 +28,8 @@ const PORT = process.env.PORT || 3001;
 
 // Set up Express
 const app = express();
+
+const isDev = process.env.NODE_ENV !== 'production';
 
 // Improve CORS configuration
 app.use(cors({
@@ -124,11 +125,19 @@ if (process.env.NODE_ENV === 'production') {
   });
 }
 
-// Load HTTPS certs
-const key = fs.readFileSync('./localhost-key.pem');
-const cert = fs.readFileSync('./localhost.pem');
+if (isDev) {
+  // Load HTTPS certs
+  const key = fs.readFileSync('./localhost-key.pem');
+  const cert = fs.readFileSync('./localhost.pem');
 
-// Use HTTPS server
-https.createServer({ key, cert }, app).listen(PORT, () => {
-  console.log(`Secure server listening on https://localhost:${PORT}`);
-});
+  // Use HTTPS server
+  https.createServer({ key, cert }, app).listen(PORT, () => {
+    console.log(`Secure server listening on https://localhost:${PORT}`);
+  });
+} else {
+  // In production, use HTTP or let Render manage HTTPS
+  const port = process.env.PORT || 3001;
+  app.listen(port, () => {
+    console.log(`Server is running on port ${port}`);
+  });
+}
