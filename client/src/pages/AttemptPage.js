@@ -3,6 +3,8 @@ import React, { useEffect, useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import axios from 'axios';
 
+const BASE_URL = "https://quiz-backend-5rjf.onrender.com";
+
 const AttemptPage = () => {
   const { quizID } = useParams();
   const userID = localStorage.getItem("userID");
@@ -16,9 +18,9 @@ const AttemptPage = () => {
       try {
         let res;
         if(quizID) {
-          res = await axios.get(`/api/result/attempts/${userID}/${quizID}`);
+          res = await axios.get(`${BASE_URL}/api/result/attempts/${userID}/${quizID}`);
         } else {
-          res = await axios.get(`/api/result/attempts/${userID}`);
+          res = await axios.get(`${BASE_URL}/api/result/attempts/${userID}`);
         }
         setAttempts(res.data);
         setLoading(false);
@@ -37,7 +39,7 @@ const AttemptPage = () => {
     console.log("Attempt ID: ", attemptID);
   
     try {
-      await axios.delete(`/api/delete/${attemptID}`);
+      await axios.delete(`${BASE_URL}/api/delete/${attemptID}`);
       setAttempts((prev) => prev.filter((a) => a.attemptID !== attemptID));
     } catch (err) {
       console.error("Failed to delete attempt:", err);

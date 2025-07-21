@@ -19,7 +19,7 @@ const Profile = () => {
         console.log("USER ID:",userID);
     
         const fetchUserInfo = async () => {
-            const res = await fetch(`https://localhost:3001/api/user/${userID}`);
+            const res = await fetch(`https://quiz-backend-5rjf.onrender.com/api/user/${userID}`);
             const data = await res.json();
             setUser(prev => ({
                 ...prev,
@@ -31,7 +31,7 @@ const Profile = () => {
     
         const fetchStats = async () => {
             try {
-                const res = await fetch(`https://localhost:3001/api/result/attempts/${userID}`);
+                const res = await fetch(`https://quiz-backend-5rjf.onrender.com/api/result/attempts/${userID}`);
                 const attempts = await res.json();
         
                 const quizzesCompleted = attempts.length;

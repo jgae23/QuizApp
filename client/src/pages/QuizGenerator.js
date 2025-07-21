@@ -26,7 +26,7 @@ const QuizGenerator = () => {
       if (quizData && quizData.length > 0) {
         try {
           // Create the quiz
-          const response = await axios.post('https://localhost:3001/api/quiz/create', {
+          const response = await axios.post('https://quiz-backend-5rjf.onrender.com/api/quiz/create', {
             title: topic,
           });
 
@@ -34,7 +34,7 @@ const QuizGenerator = () => {
           console.log("Quiz created ID: ", quizID);
 
           // Save all questions
-          const savedQuestions = await axios.post('https://localhost:3001/api/quiz/save-questions', {
+          const savedQuestions = await axios.post('https://quiz-backend-5rjf.onrender.com/api/quiz/save-questions', {
             quizID,
             title: topic,
             questions: quizData,
@@ -88,7 +88,7 @@ const QuizGenerator = () => {
       let response;
 
       if (quizType === 'ai') {
-        response = await axios.post(`https://localhost:3001/api/ai-quiz/generate`, {
+        response = await axios.post(`https://quiz-backend-5rjf.onrender.com/api/ai-quiz/generate`, {
           topic,
           numberOfQuestions,
           difficulty
@@ -103,7 +103,7 @@ const QuizGenerator = () => {
         }
       } else if (quizType === 'trivia') {
         //console.log("Making trivia quiz request to:", `${API_BASE}/api/trivia`);
-        response = await axios.post(`https://localhost:3001/api/trivia-quiz/generate`, {
+        response = await axios.post(`https://quiz-backend-5rjf.onrender.com/api/trivia-quiz/generate`, {
           category: topic,
           numberOfQuestions,
           difficulty

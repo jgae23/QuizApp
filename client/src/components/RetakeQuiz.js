@@ -11,8 +11,9 @@ const RetakeQuiz = () => {
 
     useEffect(() => {
         const fetchQuestions = async () => {
+            const BASE_URL = "https://quiz-backend-5rjf.onrender.com";
             try {
-                const response = await axios.get(`/api/quiz/questions/${quizID}`);
+                const response = await axios.get(`${BASE_URL}/api/quiz/questions/${quizID}`);
                 const topic = response.data.title;
                 const questions = response.data.questions;
                 const difficulty = response.data.difficulty;

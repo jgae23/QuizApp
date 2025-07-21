@@ -44,7 +44,7 @@ const TakeQuiz = () => {
             if (!isLogin || !userID || !quizData.length || !quizID || hasSaved) return;
 
             try {
-                const explanationResponse = await axios.post('https://localhost:3001/api/explanations/save', {
+                const explanationResponse = await axios.post('https://quiz-backend-5rjf.onrender.com/api/explanations/save', {
                     userID,
                     quizID,
                     topic: quizTopic,
@@ -68,7 +68,7 @@ const TakeQuiz = () => {
                     explanationID,
                 };
 
-                const resultRes = await axios.post('https://localhost:3001/api/result/save-results', resultPayload);
+                const resultRes = await axios.post('https://quiz-backend-5rjf.onrender.com/api/result/save-results', resultPayload);
                 if (resultRes.status === 200) {
                     console.log("Saved results successfully");
                     setHasSaved(true);

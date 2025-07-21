@@ -30,7 +30,7 @@ const MyQuizzes = () => {
         console.log("Quiz ID: ", quizID);
       
         try {
-          await axios.delete(`https://localhost:3001/api/delete/${userID}/${quizID}/${explanationID}`);
+          await axios.delete(`https://quiz-backend-5rjf.onrender.com/api/delete/${userID}/${quizID}/${explanationID}`);
           // delete successfully
           window.location.reload(); // refresh the page
         } catch (err) {
@@ -56,7 +56,7 @@ const MyQuizzes = () => {
     useEffect(() => {
         const fetchQuizzes = async () => {
         try {
-            const res = await axios.get(`https://localhost:3001/api/result/quiz/${userID}`);
+            const res = await axios.get(`https://quiz-backend-5rjf.onrender.com/api/result/quiz/${userID}`);
             setQuizzes(res.data);
             setLoading(false);
         } catch (err) {
