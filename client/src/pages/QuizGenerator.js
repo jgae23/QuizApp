@@ -92,7 +92,13 @@ const QuizGenerator = () => {
           topic,
           numberOfQuestions,
           difficulty
-        });
+        },
+        {
+          headers: {
+            'x-api-key': process.env.ANTHROPIC_API_KEY
+          }
+        }
+      );
 
         console.log("AI quiz response:", response.data);
         
