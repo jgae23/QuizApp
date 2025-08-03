@@ -106,11 +106,11 @@ router.post("/google", async (req, res) => {
             const { data: newUser, error: insertError } = await supabase
                 .from('users')
                 .insert([
-                    {
-                        username: name,
+                    { 
+                        username: name, 
                         email,
-                        password: "oauth", // No password for OAuth users
-                        googleId,
+                        password: "oauth",
+                        googleId, 
                     },
                 ])
                 .select()
