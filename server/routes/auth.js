@@ -8,14 +8,15 @@ import dotenv from "dotenv";
 dotenv.config();
 
 const router = express.Router();
+const client = new OAuth2Client(process.env.GOOGLE_CLIENT_ID);
 
-// Signup route
+// ------------------ SIGNUP ------------------
 router.post("/signup", async (req, res) => {
     const { userName, email, password } = req.body;
 
     try {
         // Check if user already exists
-        const { data: existingUser, error: findError } = await supabase
+        const { data: existingUser } = await supabase
             .from('users')
             .select('*')
             .eq('email', email)
@@ -25,36 +26,40 @@ router.post("/signup", async (req, res) => {
             return res.status(400).json({ message: 'Email already in use' });
         }
 
-        // Hash the password
         const hashedPassword = await bcrypt.hash(password, 10);
 
-        // Create new user
         const { data: newUser, error: insertError } = await supabase
             .from('users')
             .insert([
-                { username: userName, 
-                  email, 
-                  password: hashedPassword,
-                },
+                { 
+                    username: userName, 
+                    email, 
+                    password: hashedPassword,
+                }
             ])
             .select()
             .single();
         
         if (insertError) throw insertError;
-       
-        res.status(201).json({ message: 'Signup successful', userName: newUser.username, userID: newUser.userID });
+
+        res.status(201).json({ 
+            message: 'Signup successful', 
+            userName: newUser.username, 
+            userID: newUser.userID 
+        });
+
     } catch (error) {
-        console.error('Signup error', error);
+        console.error('Signup error:', error);
         res.status(500).json({ message: 'Internal server error' });
     }
 });
 
-// Login route
+// ------------------ LOGIN ------------------
 router.post("/login", async (req, res) => {
     const { email, password } = req.body;
 
     try {
-        const { data: user, error: findError } = await supabase
+        const { data: user } = await supabase
             .from('users')
             .select('*')
             .eq('email', email)
@@ -70,16 +75,19 @@ router.post("/login", async (req, res) => {
             return res.status(401).json({ message: 'Invalid email or password' });
         }
 
-        return res.status(200).json({ message: 'Login successful', userName: user.username, userID: user.userID });
+        res.status(200).json({ 
+            message: 'Login successful', 
+            userName: user.username, 
+            userID: user.userID 
+        });
+
     } catch (error) {
         console.error('Login error:', error);
         res.status(500).json({ message: 'Internal server error' });
     }
 });
 
-const client = new OAuth2Client(process.env.GOOGLE_CLIENT_ID);
-
-// Google route
+// ------------------ GOOGLE OAUTH ------------------
 router.post("/google", async (req, res) => {
     const { credential } = req.body;
     
@@ -94,14 +102,16 @@ router.post("/google", async (req, res) => {
         });
 
         const payload = ticket.getPayload();
-        const { email, name, picture, sub: googleId } = payload;
+        const { email, name, sub: googleId } = payload;
 
-        let { data: user, error } = await supabase
+        // Try to find existing user by email
+        let { data: user, error: findError } = await supabase
             .from('users')
             .select('*')
             .eq('email', email)
             .single();
 
+        // If not found, insert new user
         if (!user) {
             const { data: newUser, error: insertError } = await supabase
                 .from('users')
@@ -109,9 +119,9 @@ router.post("/google", async (req, res) => {
                     { 
                         username: name, 
                         email,
-                        password: "oauth",
-                        googleId, 
-                    },
+                        password: "oauth", // Dummy password to satisfy non-null
+                        googleId
+                    }
                 ])
                 .select()
                 .single();
@@ -120,12 +130,16 @@ router.post("/google", async (req, res) => {
             user = newUser;
         }
 
-        res.json({ message: "Login successful", user });
+        res.json({ 
+            message: "Login successful", 
+            userName: user.username, 
+            userID: user.userID 
+        });
+
     } catch (error) {
         console.error("OAuth error:", error.message);
         res.status(401).json({ error: "Invalid token" });
     }
 });
-
 
 export default router;
