@@ -1,7 +1,6 @@
 // routes/savedResult.js
 import express from "express";
-import Result from "../models/savedResult.js";
-import Attempts from "../models/attempts.js";
+import supabase from "../config/supabaseClient";
 
 const router = express.Router();
 

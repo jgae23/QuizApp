@@ -1,8 +1,6 @@
 // routes/deleteResult.js
 import express from "express";
-import Attempts from "../models/attempts.js"; 
-import Result from "../models/savedResult.js"; 
-import Explanations from "../models/savedExplanation.js";
+import supabase from "../config/supabaseClient";
 
 const router = express.Router();
 

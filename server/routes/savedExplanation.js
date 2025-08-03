@@ -1,6 +1,6 @@
 // routes/savedExplanation.js
 import express from "express";
-import Explanations from "../models/savedExplanation.js";
+import supabase from "../config/supabaseClient";
 
 const router = express.Router();
 
