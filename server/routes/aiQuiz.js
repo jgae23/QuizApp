@@ -1,5 +1,6 @@
-// server/api/aiQuiz.js
+// server/routes/aiQuiz.js
 import axios from 'axios';
+import supabase from '../config/supabaseClient.js';
 
 export const generateQuiz = async (req, res) => {
   try {

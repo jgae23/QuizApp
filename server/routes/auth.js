@@ -1,6 +1,6 @@
 // routes/auth.js
 import express from "express";
-import User from "../models/user.js";
+import supabase from "../config/supabaseClient";
 import bcrypt from "bcrypt";
 import { OAuth2Client } from "google-auth-library";
 import dotenv from "dotenv";
@@ -15,7 +15,12 @@ router.post("/signup", async (req, res) => {
 
     try {
         // Check if user already exists
-        const existingUser = await User.findOne({ where: { email } });
+        const { data: existingUser, error: findError } = await supabase
+            .from('users')
+            .select('*')
+            .eq('email', email)
+            .single();
+        
         if (existingUser) {
             return res.status(400).json({ message: 'Email already in use' });
         }
@@ -24,11 +29,18 @@ router.post("/signup", async (req, res) => {
         const hashedPassword = await bcrypt.hash(password, 10);
 
         // Create new user
-        const newUser = await User.create({
-            username: userName,
-            email,
-            password: hashedPassword,
-        });
+        const { data: newUser, error: insertError } = await supabase
+            .from('users')
+            .insert([
+                { username: userName, 
+                  email, 
+                  password: hashedPassword,
+                },
+            ])
+            .select()
+            .single();
+        
+        if (insertError) throw insertError;
        
         res.status(201).json({ message: 'Signup successful', userName: newUser.username, userID: newUser.userID });
     } catch (error) {
@@ -42,7 +54,11 @@ router.post("/login", async (req, res) => {
     const { email, password } = req.body;
 
     try {
-        const user = await User.findOne({ where: { email } });
+        const { data: user, error: findError } = await supabase
+            .from('users')
+            .select('*')
+            .eq('email', email)
+            .single();
 
         if (!user) {
             return res.status(401).json({ message: 'Invalid email or password' });
@@ -80,16 +96,28 @@ router.post("/google", async (req, res) => {
         const payload = ticket.getPayload();
         const { email, name, picture, sub: googleId } = payload;
 
-        let user = await User.findOne({ where: { email } });
+        let { data: user, error } = await supabase
+            .from('users')
+            .select('*')
+            .eq('email', email)
+            .single();
 
         if (!user) {
-            user = await User.create({ 
-                email, 
-                name, 
-                username: name, 
-                googleId, 
-                password: "oauth" // Placeholder for consistency
-            });
+            const { data: newUser, error: insertError } = await supabase
+                .from('users')
+                .insert([
+                    {
+                        username: name,
+                        email,
+                        password: "oauth", // No password for OAuth users
+                        googleId,
+                    },
+                ])
+                .select()
+                .single();
+
+            if (insertError) throw insertError;
+            user = newUser;
         }
 
         res.json({ message: "Login successful", user });
