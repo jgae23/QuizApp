@@ -5,7 +5,7 @@ import { fileURLToPath } from "url";
 import cors from "cors";
 import https from 'https';
 import fs from 'fs';
-import { syncModels } from "./models/index.js";
+//import { syncModels } from "./models/index.js";
 import { generateQuiz } from './routes/aiQuiz.js';
 import express from 'express';
 import authRoutes from './routes/auth.js';
@@ -57,7 +57,7 @@ const rapidApiOptions = {
 };
 
 // Sync database models
-syncModels();
+//syncModels();
 
 // Set up auth routes
 app.use('/api/auth', authRoutes);
