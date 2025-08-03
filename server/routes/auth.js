@@ -1,6 +1,6 @@
 // routes/auth.js
 import express from "express";
-import supabase from "../config/supabaseClient";
+import supabase from "../config/supabaseClient.js";
 import bcrypt from "bcrypt";
 import { OAuth2Client } from "google-auth-library";
 import dotenv from "dotenv";
