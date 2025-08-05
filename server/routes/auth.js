@@ -23,30 +23,17 @@ console.log("SUPABASE_SERVICE_ROLE_KEY length:", process.env.SUPABASE_SERVICE_RO
 // Fetch user by email using Supabase Admin API
 // supabaseService is your service-role Supabase client
 const fetchAuthUserByEmail = async (email) => {
-  if (!email) throw new Error("Email is required");
-
   let page = 1;
-  let foundUser = null;
-
-  while (!foundUser) {
-    const { data, error } = await supabaseService.auth.admin.listUsers({
-      page,
-      perPage: 1000, // Max per page is 1000
-    });
-
+  while (true) {
+    const { data, error } = await supabaseService.auth.admin.listUsers({ page, perPage: 1000 });
     if (error) throw error;
-    if (!data.users.length) break; // no more users
-
-    foundUser = data.users.find((u) => u.email === email);
-    if (foundUser) break;
-
+    if (!data?.users?.length) break;
+    const found = data.users.find(u => u.email === email);
+    if (found) return found;
     page++;
   }
-
-  return foundUser || null;
+  return null;
 };
-
-
 
 // ------------------ SIGNUP ------------------
 // Creates an auth user using the admin API and returns an app JWT
