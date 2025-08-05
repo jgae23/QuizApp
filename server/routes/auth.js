@@ -20,26 +20,38 @@ const signAppToken = (payload) => {
 console.log("SUPABASE_URL:", process.env.SUPABASE_URL);
 console.log("SUPABASE_SERVICE_ROLE_KEY length:", process.env.SUPABASE_SERVICE_ROLE_KEY?.length);
 
-// Helper: fetch user via Supabase Admin REST (by email)
+// helper in routes/auth.js — uses supabaseService (service-role client)
 const fetchAuthUserByEmail = async (email) => {
-  console.log("fetchAuthUserByEmail called with email:", email);
   if (!email) throw new Error("fetchAuthUserByEmail called with empty email");
-  const url =`https://ulkjxxxlcboucusqgibj.supabase.co/admin/v1/users?email=${encodeURIComponent(email)}`;
-  const resp = await fetch(url, {
-    method: "GET",
-    headers: {
-      apikey: process.env.SUPABASE_SERVICE_ROLE_KEY,
-      Authorization: `Bearer ${process.env.SUPABASE_SERVICE_ROLE_KEY}`,
-      "Content-Type": "application/json",
-    },
-  });
-  if (!resp.ok) {
-    const body = await resp.text();
-    throw new Error(`Failed to fetch admin user: ${resp.status} ${body}`);
+  console.log("fetchAuthUserByEmail called with:", email);
+
+  // Use the JS admin API to list users (paginated). We'll scan pages until we find the email.
+  // For small projects this is fine. If you have many users, you can adjust per_page or use the REST endpoint.
+  try {
+    let page = 1;
+    const per_page = 100; // adjust as needed
+    while (true) {
+      const { data, error } = await supabaseService.auth.admin.listUsers({ page, per_page });
+      if (error) {
+        console.error("listUsers error:", error);
+        throw error;
+      }
+      if (!data || !data.users) break;
+
+      const found = data.users.find(u => u.email && u.email.toLowerCase() === email.toLowerCase());
+      if (found) return found;
+
+      // if fewer than per_page users returned, we're at the end
+      if (!data.users || data.users.length < per_page) break;
+      page += 1;
+    }
+    return null;
+  } catch (err) {
+    console.error("fetchAuthUserByEmail failed:", err);
+    throw err;
   }
-  const list = await resp.json();
-  return Array.isArray(list) && list.length > 0 ? list[0] : null;
 };
+
 
 // ------------------ SIGNUP ------------------
 // Creates an auth user using the admin API and returns an app JWT
