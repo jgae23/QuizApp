@@ -21,28 +21,31 @@ console.log("SUPABASE_URL:", process.env.SUPABASE_URL);
 console.log("SUPABASE_SERVICE_ROLE_KEY length:", process.env.SUPABASE_SERVICE_ROLE_KEY?.length);
 
 // Fetch user by email using Supabase Admin API
+// supabaseService is your service-role Supabase client
 const fetchAuthUserByEmail = async (email) => {
-  if (!email) throw new Error("Email is required to fetch user");
+  if (!email) throw new Error("Email is required");
 
-  const url = `https://ulkjxxxlcboucusqgibj.supabase.co/admin/v1/users?email=${encodeURIComponent(email)}`;
+  let page = 1;
+  let foundUser = null;
 
-  const resp = await fetch(url, {
-    method: "GET",
-    headers: {
-      apikey: process.env.SUPABASE_SERVICE_ROLE_KEY,
-      Authorization: `Bearer ${process.env.SUPABASE_SERVICE_ROLE_KEY}`,
-      "Content-Type": "application/json",
-    },
-  });
+  while (!foundUser) {
+    const { data, error } = await supabaseService.auth.admin.listUsers({
+      page,
+      perPage: 1000, // Max per page is 1000
+    });
 
-  if (!resp.ok) {
-    const body = await resp.text();
-    throw new Error(`Failed to fetch admin user: ${resp.status} ${body}`);
+    if (error) throw error;
+    if (!data.users.length) break; // no more users
+
+    foundUser = data.users.find((u) => u.email === email);
+    if (foundUser) break;
+
+    page++;
   }
 
-  const list = await resp.json();
-  return Array.isArray(list) && list.length > 0 ? list[0] : null;
+  return foundUser || null;
 };
+
 
 
 // ------------------ SIGNUP ------------------
