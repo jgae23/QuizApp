@@ -57,6 +57,18 @@ router.post("/signup", async (req, res) => {
 
     if (createErr) throw createErr;
     // Ensure profile row exists in public.profiles (optional, depends on your setup)
+    // after createUser
+    try {
+    const { error: upsertError } = await supabaseService
+        .from("profiles")
+        .upsert([{ id: newUser.id, username: userName, email }], { onConflict: "id" });
+    if (upsertError) {
+        console.warn("Profile upsert failed (non-fatal):", upsertError);
+    }
+    } catch (err) {
+    console.warn("Profile upsert exception (non-fatal):", err);
+    }
+
     /*await supabaseService.from("profiles").upsert(
       [{ id: newUser.id, username: userName, email }],
       { onConflict: "id" }
