@@ -1,6 +1,6 @@
 // routes/deleteResult.js
 import express from "express";
-import supabase from "../config/supabaseClient.js";
+import supabase from "../config/supabaseServiceClient.js";
 
 const router = express.Router();
 
