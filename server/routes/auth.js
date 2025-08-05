@@ -21,7 +21,7 @@ const signAppToken = (payload) => {
 const fetchAuthUserByEmail = async (email) => {
   console.log("fetchAuthUserByEmail called with email:", email);
   if (!email) throw new Error("fetchAuthUserByEmail called with empty email");
-  const url = `${process.env.SUPABASE_URL.replace(/\/$/, "")}/admin/v1/users?email=${encodeURIComponent(email)}`;
+  const url =`https://ulkjxxxlcboucusqgibj.supabase.co/admin/v1/users?email=${encodeURIComponent(email)}`;
   const resp = await fetch(url, {
     method: "GET",
     headers: {
