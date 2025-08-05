@@ -85,7 +85,6 @@ router.post("/login", async (req, res) => {
   if (!email || !password) return res.status(400).json({ message: "Missing fields" });
 
   try {
-    // Call Supabase token endpoint to get a session (server-side)
     const tokenUrl = `${process.env.SUPABASE_URL.replace(/\/$/, "")}/auth/v1/token`;
     const params = new URLSearchParams({
       grant_type: "password",
@@ -103,17 +102,26 @@ router.post("/login", async (req, res) => {
       body: params.toString(),
     });
 
+    const status = tokenResp.status;
     const tokenJson = await tokenResp.json();
+
+    // DEBUG logs (remove in production)
+    console.log("Supabase token endpoint response status:", status);
+    console.log("Supabase token endpoint body:", tokenJson);
+
     if (!tokenResp.ok) {
-      console.warn("Supabase token error:", tokenJson);
-      return res.status(401).json({ message: tokenJson.error_description || tokenJson.error || "Invalid email or password" });
+      // Return the exact message Supabase gives (helpful for debugging)
+      const message = tokenJson.error_description || tokenJson.error || "Invalid email or password";
+      return res.status(401).json({ message, details: tokenJson });
     }
 
     // tokenJson contains access_token and user
-    const authUser = tokenJson.user; // has id, email, user_metadata
-    const username = authUser.user_metadata?.username ?? authUser.email;
+    const authUser = tokenJson.user;
+    if (!authUser) {
+      return res.status(500).json({ message: "Authenticated but no user returned from Supabase", details: tokenJson });
+    }
 
-    // Create app JWT for your API auth
+    const username = authUser.user_metadata?.username ?? authUser.email;
     const appToken = signAppToken({ userID: authUser.id, username });
 
     res.status(200).json({
@@ -121,7 +129,8 @@ router.post("/login", async (req, res) => {
       userName: username,
       userID: authUser.id,
       token: appToken,
-      supabase_access_token: tokenJson.access_token, // optional: return supabase token if you want
+      supabase_access_token: tokenJson.access_token,
+      supabase_refresh_token: tokenJson.refresh_token, // optional
     });
   } catch (error) {
     console.error("Login error:", error);
