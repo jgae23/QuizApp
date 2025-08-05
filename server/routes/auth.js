@@ -64,8 +64,7 @@ router.post("/signup", async (req, res) => {
         id: newUser.id,
         email: newUser.email,
         username: userName,
-        created_at: new Date().toISOString(),
-        updated_at: new Date().toISOString()
+        created_at: new Date().toISOString()
       })
       .select()
       .single();
