@@ -80,27 +80,49 @@ router.post("/signup", async (req, res) => {
 // ------------------ LOGIN ------------------
 // Use Supabase token endpoint (grant_type=password) to authenticate and get user info.
 // Returns an app JWT (server-signed) for your API use.
+
 router.post("/login", async (req, res) => {
   const { email, password } = req.body;
-  if (!email || !password) return res.status(400).json({ message: "Missing fields" });
+  if (!email || !password) {
+    return res.status(400).json({ message: "Missing fields" });
+  }
 
   try {
     const { data, error } = await supabaseService.auth.signInWithPassword({
-      email: email,
-      password: password,
+      email,
+      password
     });
 
     if (error) {
-      throw error;
+      console.error("Supabase login error:", error);
+      return res.status(401).json({ message: error.message });
     }
 
-    // Login successful, 'data.session' contains the user session
-    return { success: true, user: data.user, session: data.session };
-  } catch (error) {
-    console.error('Login error:', error.message);
-    return { success: false, error: error.message };
+    const { user, session } = data;
+    if (!user) {
+      return res.status(401).json({ message: "Invalid credentials" });
+    }
+
+    // user has id, email, user_metadata
+    const username = user.user_metadata?.username ?? user.email;
+
+    // Sign your app’s own JWT
+    const appToken = signAppToken({ userID: user.id, username });
+
+    res.status(200).json({
+      message: "Login successful",
+      userName: username,
+      userID: user.id,
+      token: appToken,
+      supabase_access_token: session.access_token,
+      supabase_refresh_token: session.refresh_token
+    });
+  } catch (err) {
+    console.error("Login error:", err);
+    res.status(500).json({ message: "Internal server error" });
   }
 });
+
 
 // ------------------ GOOGLE OAUTH ------------------
 // Frontend sends Google ID token (credential). Server verifies it with Google,
