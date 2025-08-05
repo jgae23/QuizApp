@@ -61,7 +61,6 @@ router.post("/signup", async (req, res) => {
     const { data: profile, error: profileError } = await supabaseService
       .from("profiles")
       .insert({
-        id: newUser.id,
         email: newUser.email,
         username: userName,
         created_at: new Date().toISOString()
