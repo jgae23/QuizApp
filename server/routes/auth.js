@@ -1,7 +1,6 @@
 // routes/auth.js
 import express from "express";
 import supabaseService from "../config/supabaseServiceClient.js"; // service-role client
-import { createClient } from "@supabase/supabase-js"; // Import createClient for temporary client
 import bcrypt from "bcrypt";
 import { OAuth2Client } from "google-auth-library";
 import dotenv from "dotenv";
@@ -18,95 +17,52 @@ const signAppToken = (payload) => {
   });
 };
 
-// Helper: fetch user via Supabase Admin API (by email)
+// Helper: fetch user via Supabase Admin REST (by email)
 const fetchAuthUserByEmail = async (email) => {
   console.log("fetchAuthUserByEmail called with email:", email);
   if (!email) throw new Error("fetchAuthUserByEmail called with empty email");
-  
-  try {
-    // Use the service client to list users (much cleaner than manual REST calls)
-    const { data: users, error } = await supabaseService.auth.admin.listUsers();
-    
-    if (error) {
-      console.error("Error listing users:", error);
-      throw new Error(`Failed to fetch users: ${error.message}`);
-    }
-    
-    // Find user by email
-    const user = users.users.find(u => u.email === email);
-    return user || null;
-    
-  } catch (error) {
-    console.error("fetchAuthUserByEmail error:", error);
-    throw error;
+  const url =`https://ulkjxxxlcboucusqgibj.supabase.co/admin/v1/users?email=${encodeURIComponent(email)}`;
+  const resp = await fetch(url, {
+    method: "GET",
+    headers: {
+      apikey: process.env.SUPABASE_SERVICE_ROLE_KEY,
+      Authorization: `Bearer ${process.env.SUPABASE_SERVICE_ROLE_KEY}`,
+      "Content-Type": "application/json",
+    },
+  });
+  if (!resp.ok) {
+    const body = await resp.text();
+    throw new Error(`Failed to fetch admin user: ${resp.status} ${body}`);
   }
-};
-
-// Alternative helper using Supabase client method (recommended)
-const fetchAuthUserByEmailV2 = async (email) => {
-  try {
-    // Use listUsers and filter by email since getUserByEmail doesn't exist
-    const { data, error } = await supabaseService.auth.admin.listUsers();
-    
-    if (error) {
-      console.error("Error listing users:", error);
-      throw error;
-    }
-    
-    // Find user by email
-    const user = data.users.find(u => u.email === email);
-    return user || null;
-    
-  } catch (error) {
-    console.error("fetchAuthUserByEmailV2 error:", error);
-    throw error;
-  }
+  const list = await resp.json();
+  return Array.isArray(list) && list.length > 0 ? list[0] : null;
 };
 
 // ------------------ SIGNUP ------------------
 // Creates an auth user using the admin API and returns an app JWT
 router.post("/signup", async (req, res) => {
   const { userName, email, password } = req.body;
-  if (!email || !password || !userName) {
-    return res.status(400).json({ message: "Missing fields" });
-  }
+  if (!email || !password || !userName) return res.status(400).json({ message: "Missing fields" });
 
   try {
-    // Check if user exists in auth.users
-    const existing = await fetchAuthUserByEmailV2(email);
-    if (existing) {
-      return res.status(400).json({ message: "Email already in use" });
-    }
+    // If user exists in auth.users, reject
+    const existing = await fetchAuthUserByEmail(email);
+    if (existing) return res.status(400).json({ message: "Email already in use" });
 
     // Create auth user via admin API (service role)
-    const { data: authData, error: createErr } = await supabaseService.auth.admin.createUser({
+    const { data: newUser, error: createErr } = await supabaseService.auth.admin.createUser({
       email,
-      password,
+      password, // admin will store/ hash password securely
       email_confirm: true,
       user_metadata: { username: userName },
     });
 
-    if (createErr) {
-      console.error("Create user error:", createErr);
-      throw createErr;
-    }
-
-    const newUser = authData.user;
-
-    // Wait a bit for trigger to complete, then ensure profile exists
-    await new Promise(resolve => setTimeout(resolve, 100));
-    
-    const { error: profileError } = await supabaseService
-      .from("profiles")
-      .upsert(
-        [{ id: newUser.id, username: userName, email }],
-        { onConflict: "id" }
-      );
-
-    if (profileError) {
-      console.error("Profile creation error:", profileError);
-      // Don't fail the signup if profile creation fails, just log it
-    }
+    if (createErr) throw createErr;
+    // Ensure profile row exists in public.profiles (optional, depends on your setup)
+    await supabaseService.from("profiles").upsert(
+      [{ id: newUser.id, username: userName, email }],
+      { onConflict: "id" }
+    );
 
     // Sign app token
     const token = signAppToken({ userID: newUser.id, username: userName });
@@ -119,62 +75,45 @@ router.post("/signup", async (req, res) => {
     });
   } catch (error) {
     console.error("Signup error:", error);
-    res.status(500).json({ 
-      message: "Internal server error", 
-      error: error.message 
-    });
+    res.status(500).json({ message: "Internal server error", error: error.message });
   }
 });
 
 // ------------------ LOGIN ------------------
-// Use Supabase to authenticate user and return app JWT
+// Use Supabase token endpoint (grant_type=password) to authenticate and get user info.
+// Returns an app JWT (server-signed) for your API use.
 router.post("/login", async (req, res) => {
   const { email, password } = req.body;
-  if (!email || !password) {
-    return res.status(400).json({ message: "Missing fields" });
-  }
+  if (!email || !password) return res.status(400).json({ message: "Missing fields" });
 
   try {
-    // First, check if user exists
-    const existingUser = await fetchAuthUserByEmailV2(email);
-    if (!existingUser) {
-      return res.status(401).json({ message: "Invalid email or password" });
-    }
-
-    // Create a temporary client to authenticate the user
-    // We need to use the anon key for this, not service role
-    const tempClient = createClient(
-      process.env.SUPABASE_URL,
-      process.env.SUPABASE_ANON_KEY
-    );
-
-    const { data: signInData, error: signInError } = await tempClient.auth.signInWithPassword({
+    // Call Supabase token endpoint to get a session (server-side)
+    const tokenUrl = `${process.env.SUPABASE_URL.replace(/\/$/, "")}/auth/v1/token`;
+    const params = new URLSearchParams({
+      grant_type: "password",
       email,
       password,
     });
 
-    if (signInError) {
-      console.error("Sign in error:", signInError);
-      return res.status(401).json({ 
-        message: "Invalid email or password"
-      });
+    const tokenResp = await fetch(tokenUrl, {
+      method: "POST",
+      headers: {
+        apikey: process.env.SUPABASE_ANON_KEY,
+        Authorization: `Bearer ${process.env.SUPABASE_ANON_KEY}`,
+        "Content-Type": "application/x-www-form-urlencoded",
+      },
+      body: params.toString(),
+    });
+
+    const tokenJson = await tokenResp.json();
+    if (!tokenResp.ok) {
+      console.warn("Supabase token error:", tokenJson);
+      return res.status(401).json({ message: tokenJson.error_description || tokenJson.error || "Invalid email or password" });
     }
 
-    const authUser = signInData.user;
-    
-    // Get username from user_metadata or profile table
-    let username = authUser.user_metadata?.username;
-    
-    // If no username in metadata, try to get from profiles table
-    if (!username) {
-      const { data: profile } = await supabaseService
-        .from('profiles')
-        .select('username')
-        .eq('id', authUser.id)
-        .single();
-      
-      username = profile?.username || authUser.email.split('@')[0];
-    }
+    // tokenJson contains access_token and user
+    const authUser = tokenJson.user; // has id, email, user_metadata
+    const username = authUser.user_metadata?.username ?? authUser.email;
 
     // Create app JWT for your API auth
     const appToken = signAppToken({ userID: authUser.id, username });
@@ -184,15 +123,11 @@ router.post("/login", async (req, res) => {
       userName: username,
       userID: authUser.id,
       token: appToken,
-      supabase_access_token: signInData.session?.access_token, // optional
+      supabase_access_token: tokenJson.access_token, // optional: return supabase token if you want
     });
-
   } catch (error) {
     console.error("Login error:", error);
-    res.status(500).json({ 
-      message: "Internal server error", 
-      error: error.message 
-    });
+    res.status(500).json({ message: "Internal server error", error: error.message });
   }
 });
 
@@ -201,9 +136,7 @@ router.post("/login", async (req, res) => {
 // then finds or creates an auth user (via admin API), upserts profile, and returns app JWT.
 router.post("/google", async (req, res) => {
   const { credential } = req.body;
-  if (!credential) {
-    return res.status(400).json({ error: "Missing credential" });
-  }
+  if (!credential) return res.status(400).json({ error: "Missing credential" });
 
   try {
     // Verify Google token
@@ -214,59 +147,28 @@ router.post("/google", async (req, res) => {
     const payload = ticket.getPayload();
     const { email, name, sub: googleId } = payload;
 
-    if (!email) {
-      return res.status(400).json({ error: "No email in Google token" });
-    }
-
-    // Try to find existing auth user by email
-    let authUser = await fetchAuthUserByEmailV2(email);
+    // Try to find existing auth user by email (admin REST)
+    let authUser = await fetchAuthUserByEmail(email);
 
     // If not found, create via admin.createUser
     if (!authUser) {
-      const { data: createData, error: createErr } = await supabaseService.auth.admin.createUser({
+      const { data: createdUser, error: createErr } = await supabaseService.auth.admin.createUser({
         email,
         password: Math.random().toString(36).slice(-12), // random password; user uses OAuth
         email_confirm: true,
         user_metadata: { username: name, googleId },
       });
-      
-      if (createErr) {
-        console.error("Create OAuth user error:", createErr);
-        throw createErr;
-      }
-      
-      authUser = createData.user;
+      if (createErr) throw createErr;
+      authUser = createdUser;
     }
 
-    // Wait a bit for trigger to complete, then ensure profile exists
-    await new Promise(resolve => setTimeout(resolve, 100));
-    
-    // Ensure a profile row exists in public.profiles
-    const { error: profileError } = await supabaseService
-      .from("profiles")
-      .upsert(
-        [{ id: authUser.id, username: name, email }],
-        { onConflict: "id" }
-      );
+    // Ensure a profile row exists in public.profiles (server uses service key -> bypass RLS)
+    await supabaseService.from("profiles").upsert(
+      [{ id: authUser.id, username: name, email }],
+      { onConflict: "id" }
+    );
 
-    if (profileError) {
-      console.error("Profile upsert error:", profileError);
-      // Don't fail OAuth if profile creation fails
-    }
-
-    // Get username from user_metadata or profile table
-    let username = authUser.user_metadata?.username;
-    
-    // If no username in metadata, try to get from profiles table
-    if (!username) {
-      const { data: profile } = await supabaseService
-        .from('profiles')
-        .select('username')
-        .eq('id', authUser.id)
-        .single();
-      
-      username = profile?.username || name || authUser.email.split('@')[0];
-    }
+    const username = authUser.user_metadata?.username ?? name ?? authUser.email;
 
     // Sign app token
     const appToken = signAppToken({ userID: authUser.id, username });
@@ -279,10 +181,7 @@ router.post("/google", async (req, res) => {
     });
   } catch (error) {
     console.error("OAuth error:", error);
-    res.status(401).json({ 
-      error: "Authentication failed", 
-      details: error.message 
-    });
+    res.status(401).json({ error: "Invalid token", details: error.message });
   }
 });
 
