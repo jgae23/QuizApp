@@ -46,6 +46,7 @@ router.post("/signup", async (req, res) => {
 
   try {
     // If user exists in auth.users, reject
+    console.log("fetchAuthUserByEmail called with email at 49:", email);
     const existing = await fetchAuthUserByEmail(email);
     if (existing) return res.status(400).json({ message: "Email already in use" });
 
