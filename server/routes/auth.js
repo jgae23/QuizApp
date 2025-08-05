@@ -93,7 +93,9 @@ router.post("/signup", async (req, res) => {
 
     const newUser = authData.user;
 
-    // Ensure profile row exists in public.profiles
+    // Wait a bit for trigger to complete, then ensure profile exists
+    await new Promise(resolve => setTimeout(resolve, 100));
+    
     const { error: profileError } = await supabaseService
       .from("profiles")
       .upsert(
@@ -159,7 +161,20 @@ router.post("/login", async (req, res) => {
     }
 
     const authUser = signInData.user;
-    const username = authUser.user_metadata?.username ?? authUser.email;
+    
+    // Get username from user_metadata or profile table
+    let username = authUser.user_metadata?.username;
+    
+    // If no username in metadata, try to get from profiles table
+    if (!username) {
+      const { data: profile } = await supabaseService
+        .from('profiles')
+        .select('username')
+        .eq('id', authUser.id)
+        .single();
+      
+      username = profile?.username || authUser.email.split('@')[0];
+    }
 
     // Create app JWT for your API auth
     const appToken = signAppToken({ userID: authUser.id, username });
@@ -223,6 +238,9 @@ router.post("/google", async (req, res) => {
       authUser = createData.user;
     }
 
+    // Wait a bit for trigger to complete, then ensure profile exists
+    await new Promise(resolve => setTimeout(resolve, 100));
+    
     // Ensure a profile row exists in public.profiles
     const { error: profileError } = await supabaseService
       .from("profiles")
@@ -236,7 +254,19 @@ router.post("/google", async (req, res) => {
       // Don't fail OAuth if profile creation fails
     }
 
-    const username = authUser.user_metadata?.username ?? name ?? authUser.email;
+    // Get username from user_metadata or profile table
+    let username = authUser.user_metadata?.username;
+    
+    // If no username in metadata, try to get from profiles table
+    if (!username) {
+      const { data: profile } = await supabaseService
+        .from('profiles')
+        .select('username')
+        .eq('id', authUser.id)
+        .single();
+      
+      username = profile?.username || name || authUser.email.split('@')[0];
+    }
 
     // Sign app token
     const appToken = signAppToken({ userID: authUser.id, username });
