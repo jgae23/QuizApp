@@ -1,7 +1,7 @@
 // client/src/pages/Login.jsx
 import React, { useState } from "react";
 import AuthForm from "../components/AuthForm";
-import jwt_decode from "jwt-decode";
+import {jwtDecode} from "jwt-decode";
 import { useNavigate } from "react-router-dom";
 
 const Login = () => {
@@ -87,7 +87,7 @@ const Login = () => {
     }
 
     try {
-      const decoded = jwt_decode(token);
+      const decoded = jwtDecode(token);
       console.log("Decoded Google token:", decoded);
     } catch {
       // not critical
