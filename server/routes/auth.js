@@ -85,56 +85,20 @@ router.post("/login", async (req, res) => {
   if (!email || !password) return res.status(400).json({ message: "Missing fields" });
 
   try {
-    const tokenUrl = `${process.env.SUPABASE_URL.replace(/\/$/, "")}/auth/v1/token`;
-    const params = new URLSearchParams({
-      grant_type: "password",
-      email,
-      password,
+    const { data, error } = await supabaseService.auth.signInWithPassword({
+      email: email,
+      password: password,
     });
 
-    const tokenResp = await fetch(tokenUrl, {
-      method: "POST",
-      headers: {
-        apikey: process.env.SUPABASE_ANON_KEY,
-        Authorization: `Bearer ${process.env.SUPABASE_ANON_KEY}`,
-        "Content-Type": "application/x-www-form-urlencoded",
-      },
-      body: params.toString(),
-    });
-
-    const status = tokenResp.status;
-    const tokenJson = await tokenResp.json();
-
-    // DEBUG logs (remove in production)
-    console.log("Supabase token endpoint response status:", status);
-    console.log("Supabase token endpoint body:", tokenJson);
-
-    if (!tokenResp.ok) {
-      // Return the exact message Supabase gives (helpful for debugging)
-      const message = tokenJson.error_description || tokenJson.error || "Invalid email or password";
-      return res.status(401).json({ message, details: tokenJson });
+    if (error) {
+      throw error;
     }
 
-    // tokenJson contains access_token and user
-    const authUser = tokenJson.user;
-    if (!authUser) {
-      return res.status(500).json({ message: "Authenticated but no user returned from Supabase", details: tokenJson });
-    }
-
-    const username = authUser.user_metadata?.username ?? authUser.email;
-    const appToken = signAppToken({ userID: authUser.id, username });
-
-    res.status(200).json({
-      message: "Login successful",
-      userName: username,
-      userID: authUser.id,
-      token: appToken,
-      supabase_access_token: tokenJson.access_token,
-      supabase_refresh_token: tokenJson.refresh_token, // optional
-    });
+    // Login successful, 'data.session' contains the user session
+    return { success: true, user: data.user, session: data.session };
   } catch (error) {
-    console.error("Login error:", error);
-    res.status(500).json({ message: "Internal server error", error: error.message });
+    console.error('Login error:', error.message);
+    return { success: false, error: error.message };
   }
 });
 
