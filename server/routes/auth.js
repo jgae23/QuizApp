@@ -59,29 +59,21 @@ router.post("/signup", async (req, res) => {
     // Ensure profile row exists in public.profiles (optional, depends on your setup)
     // after createUser
     const { data: profile, error: profileError } = await supabaseService
-      .from("profiles")
-      .insert({
-        id: newUser.id,
-        email: newUser.email,
-        username: newUser.userName,
-        created_at: new Date().toISOString()
-      })
-      .select()
-      .single();
+        .from("profiles")
+        .insert({
+            id: newUser.user.id, // <- UUID from auth.users
+            email: newUser.user.email,
+            username: userName, // <- from req.body, or newUser.user.user_metadata.username
+            created_at: new Date().toISOString()
+        })
+        .select()
+        .single();
 
     if (profileError) {
-      console.error("Profile creation error:", profileError);
-      
-      // If profile creation fails, we might want to clean up the auth user
-      // (optional - depends on your requirements)
-      try {
-        await supabaseService.auth.admin.deleteUser(newUser.id);
-      } catch (cleanupError) {
-        console.error("Failed to cleanup auth user:", cleanupError);
-      }
-      
-      throw new Error("Failed to create user profile");
+        console.error("Profile creation error:", profileError);
+        throw new Error("Failed to create user profile");
     }
+
 
     console.log("Profile created successfully:", profile);
 
