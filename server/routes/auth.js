@@ -1,145 +1,186 @@
 // routes/auth.js
 import express from "express";
-import supabase from "../config/supabaseClient.js";
+import supabaseService from "../config/supabaseServiceClient.js"; // service-role client
 import bcrypt from "bcrypt";
 import { OAuth2Client } from "google-auth-library";
 import dotenv from "dotenv";
+import jwt from "jsonwebtoken";
 
 dotenv.config();
 
 const router = express.Router();
 const client = new OAuth2Client(process.env.GOOGLE_CLIENT_ID);
 
+const signAppToken = (payload) => {
+  return jwt.sign(payload, process.env.JWT_SECRET, {
+    expiresIn: process.env.JWT_EXPIRES_IN || "7d",
+  });
+};
+
+// Helper: fetch user via Supabase Admin REST (by email)
+const fetchAuthUserByEmail = async (email) => {
+  const url = `${process.env.SUPABASE_URL.replace(/\/$/, "")}/admin/v1/users?email=${encodeURIComponent(email)}`;
+  const resp = await fetch(url, {
+    method: "GET",
+    headers: {
+      apikey: process.env.SUPABASE_SERVICE_ROLE_KEY,
+      Authorization: `Bearer ${process.env.SUPABASE_SERVICE_ROLE_KEY}`,
+      "Content-Type": "application/json",
+    },
+  });
+  if (!resp.ok) {
+    const body = await resp.text();
+    throw new Error(`Failed to fetch admin user: ${resp.status} ${body}`);
+  }
+  const list = await resp.json();
+  return Array.isArray(list) && list.length > 0 ? list[0] : null;
+};
+
 // ------------------ SIGNUP ------------------
+// Creates an auth user using the admin API and returns an app JWT
 router.post("/signup", async (req, res) => {
-    const { userName, email, password } = req.body;
+  const { userName, email, password } = req.body;
+  if (!email || !password || !userName) return res.status(400).json({ message: "Missing fields" });
 
-    try {
-        // Check if user already exists
-        const { data: existingUser } = await supabase
-            .from('users')
-            .select('*')
-            .eq('email', email)
-            .single();
-        
-        if (existingUser) {
-            return res.status(400).json({ message: 'Email already in use' });
-        }
+  try {
+    // If user exists in auth.users, reject
+    const existing = await fetchAuthUserByEmail(email);
+    if (existing) return res.status(400).json({ message: "Email already in use" });
 
-        const hashedPassword = await bcrypt.hash(password, 10);
+    // Create auth user via admin API (service role)
+    const { data: newUser, error: createErr } = await supabaseService.auth.admin.createUser({
+      email,
+      password, // admin will store/ hash password securely
+      email_confirm: true,
+      user_metadata: { username: userName },
+    });
 
-        const { data: newUser, error: insertError } = await supabase
-            .from('users')
-            .insert([
-                { 
-                    username: userName, 
-                    email, 
-                    password: hashedPassword,
-                }
-            ])
-            .select()
-            .single();
-        
-        if (insertError) throw insertError;
+    if (createErr) throw createErr;
+    // Ensure profile row exists in public.profiles (optional, depends on your setup)
+    await supabaseService.from("profiles").upsert(
+      [{ id: newUser.id, username: userName, email }],
+      { onConflict: "id" }
+    );
 
-        res.status(201).json({ 
-            message: 'Signup successful', 
-            userName: newUser.username, 
-            userID: newUser.userID 
-        });
+    // Sign app token
+    const token = signAppToken({ userID: newUser.id, username: userName });
 
-    } catch (error) {
-        console.error('Signup error:', error);
-        res.status(500).json({ message: 'Internal server error' });
-    }
+    res.status(201).json({
+      message: "Signup successful",
+      userName,
+      userID: newUser.id,
+      token,
+    });
+  } catch (error) {
+    console.error("Signup error:", error);
+    res.status(500).json({ message: "Internal server error", error: error.message });
+  }
 });
 
 // ------------------ LOGIN ------------------
+// Use Supabase token endpoint (grant_type=password) to authenticate and get user info.
+// Returns an app JWT (server-signed) for your API use.
 router.post("/login", async (req, res) => {
-    const { email, password } = req.body;
+  const { email, password } = req.body;
+  if (!email || !password) return res.status(400).json({ message: "Missing fields" });
 
-    try {
-        const { data: user } = await supabase
-            .from('users')
-            .select('*')
-            .eq('email', email)
-            .single();
+  try {
+    // Call Supabase token endpoint to get a session (server-side)
+    const tokenUrl = `${process.env.SUPABASE_URL.replace(/\/$/, "")}/auth/v1/token`;
+    const params = new URLSearchParams({
+      grant_type: "password",
+      email,
+      password,
+    });
 
-        if (!user) {
-            return res.status(401).json({ message: 'Invalid email or password' });
-        }
+    const tokenResp = await fetch(tokenUrl, {
+      method: "POST",
+      headers: {
+        apikey: process.env.SUPABASE_ANON_KEY,
+        Authorization: `Bearer ${process.env.SUPABASE_ANON_KEY}`,
+        "Content-Type": "application/x-www-form-urlencoded",
+      },
+      body: params.toString(),
+    });
 
-        const isMatch = await bcrypt.compare(password, user.password);
-
-        if (!isMatch) {
-            return res.status(401).json({ message: 'Invalid email or password' });
-        }
-
-        res.status(200).json({ 
-            message: 'Login successful', 
-            userName: user.username, 
-            userID: user.userID 
-        });
-
-    } catch (error) {
-        console.error('Login error:', error);
-        res.status(500).json({ message: 'Internal server error' });
+    const tokenJson = await tokenResp.json();
+    if (!tokenResp.ok) {
+      console.warn("Supabase token error:", tokenJson);
+      return res.status(401).json({ message: tokenJson.error_description || tokenJson.error || "Invalid email or password" });
     }
+
+    // tokenJson contains access_token and user
+    const authUser = tokenJson.user; // has id, email, user_metadata
+    const username = authUser.user_metadata?.username ?? authUser.email;
+
+    // Create app JWT for your API auth
+    const appToken = signAppToken({ userID: authUser.id, username });
+
+    res.status(200).json({
+      message: "Login successful",
+      userName: username,
+      userID: authUser.id,
+      token: appToken,
+      supabase_access_token: tokenJson.access_token, // optional: return supabase token if you want
+    });
+  } catch (error) {
+    console.error("Login error:", error);
+    res.status(500).json({ message: "Internal server error", error: error.message });
+  }
 });
 
 // ------------------ GOOGLE OAUTH ------------------
+// Frontend sends Google ID token (credential). Server verifies it with Google,
+// then finds or creates an auth user (via admin API), upserts profile, and returns app JWT.
 router.post("/google", async (req, res) => {
-    const { credential } = req.body;
-    
-    if (!credential) {
-        return res.status(400).json({ error: "Missing credential" });
+  const { credential } = req.body;
+  if (!credential) return res.status(400).json({ error: "Missing credential" });
+
+  try {
+    // Verify Google token
+    const ticket = await client.verifyIdToken({
+      idToken: credential,
+      audience: process.env.GOOGLE_CLIENT_ID,
+    });
+    const payload = ticket.getPayload();
+    const { email, name, sub: googleId } = payload;
+
+    // Try to find existing auth user by email (admin REST)
+    let authUser = await fetchAuthUserByEmail(email);
+
+    // If not found, create via admin.createUser
+    if (!authUser) {
+      const { data: createdUser, error: createErr } = await supabaseService.auth.admin.createUser({
+        email,
+        password: Math.random().toString(36).slice(-12), // random password; user uses OAuth
+        email_confirm: true,
+        user_metadata: { username: name, googleId },
+      });
+      if (createErr) throw createErr;
+      authUser = createdUser;
     }
 
-    try {
-        const ticket = await client.verifyIdToken({
-            idToken: credential,
-            audience: process.env.GOOGLE_CLIENT_ID,
-        });
+    // Ensure a profile row exists in public.profiles (server uses service key -> bypass RLS)
+    await supabaseService.from("profiles").upsert(
+      [{ id: authUser.id, username: name, email }],
+      { onConflict: "id" }
+    );
 
-        const payload = ticket.getPayload();
-        const { email, name, sub: googleId } = payload;
+    const username = authUser.user_metadata?.username ?? name ?? authUser.email;
 
-        // Try to find existing user by email
-        let { data: user, error: findError } = await supabase
-            .from('users')
-            .select('*')
-            .eq('email', email)
-            .single();
+    // Sign app token
+    const appToken = signAppToken({ userID: authUser.id, username });
 
-        // If not found, insert new user
-        if (!user) {
-            const { data: newUser, error: insertError } = await supabase
-                .from('users')
-                .insert([
-                    { 
-                        username: name, 
-                        email,
-                        password: "oauth", // Dummy password to satisfy non-null
-                        googleId
-                    }
-                ])
-                .select()
-                .single();
-
-            if (insertError) throw insertError;
-            user = newUser;
-        }
-
-        res.json({ 
-            message: "Login successful", 
-            userName: user.username, 
-            userID: user.userID 
-        });
-
-    } catch (error) {
-        console.error("OAuth error:", error.message);
-        res.status(401).json({ error: "Invalid token" });
-    }
+    res.json({
+      message: "Login successful",
+      userName: username,
+      userID: authUser.id,
+      token: appToken,
+    });
+  } catch (error) {
+    console.error("OAuth error:", error);
+    res.status(401).json({ error: "Invalid token", details: error.message });
+  }
 });
 
 export default router;
