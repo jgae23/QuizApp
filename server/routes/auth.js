@@ -1,6 +1,7 @@
 // routes/auth.js
 import express from "express";
 import supabaseService from "../config/supabaseServiceClient.js"; // service-role client
+import { createClient } from "@supabase/supabase-js"; // Import createClient for temporary client
 import bcrypt from "bcrypt";
 import { OAuth2Client } from "google-auth-library";
 import dotenv from "dotenv";
@@ -44,18 +45,18 @@ const fetchAuthUserByEmail = async (email) => {
 // Alternative helper using Supabase client method (recommended)
 const fetchAuthUserByEmailV2 = async (email) => {
   try {
-    // This is a cleaner approach using the client method
-    const { data, error } = await supabaseService.auth.admin.getUserByEmail(email);
+    // Use listUsers and filter by email since getUserByEmail doesn't exist
+    const { data, error } = await supabaseService.auth.admin.listUsers();
     
     if (error) {
-      // If user not found, return null instead of throwing
-      if (error.message.includes('User not found')) {
-        return null;
-      }
+      console.error("Error listing users:", error);
       throw error;
     }
     
-    return data.user;
+    // Find user by email
+    const user = data.users.find(u => u.email === email);
+    return user || null;
+    
   } catch (error) {
     console.error("fetchAuthUserByEmailV2 error:", error);
     throw error;
@@ -124,7 +125,7 @@ router.post("/signup", async (req, res) => {
 });
 
 // ------------------ LOGIN ------------------
-// Use Supabase Admin to authenticate user and return app JWT
+// Use Supabase to authenticate user and return app JWT
 router.post("/login", async (req, res) => {
   const { email, password } = req.body;
   if (!email || !password) {
@@ -132,23 +133,20 @@ router.post("/login", async (req, res) => {
   }
 
   try {
-    // Use Supabase Admin to sign in the user (server-side)
-    const { data, error } = await supabaseService.auth.admin.generateLink({
-      type: 'magiclink',
-      email: email,
-      options: {
-        redirectTo: 'http://localhost:3000' // This won't be used, just required
-      }
-    });
-
-    if (error) {
-      console.error("Generate link error:", error);
-      return res.status(401).json({ message: "Invalid credentials" });
+    // First, check if user exists
+    const existingUser = await fetchAuthUserByEmailV2(email);
+    if (!existingUser) {
+      return res.status(401).json({ message: "Invalid email or password" });
     }
 
-    // Alternative: Use signInWithPassword with a temporary client
-    // This is actually better for password authentication
-    const { data: signInData, error: signInError } = await supabaseService.auth.signInWithPassword({
+    // Create a temporary client to authenticate the user
+    // We need to use the anon key for this, not service role
+    const tempClient = createClient(
+      process.env.SUPABASE_URL,
+      process.env.SUPABASE_ANON_KEY
+    );
+
+    const { data: signInData, error: signInError } = await tempClient.auth.signInWithPassword({
       email,
       password,
     });
@@ -156,7 +154,7 @@ router.post("/login", async (req, res) => {
     if (signInError) {
       console.error("Sign in error:", signInError);
       return res.status(401).json({ 
-        message: signInError.message || "Invalid email or password" 
+        message: "Invalid email or password"
       });
     }
 
