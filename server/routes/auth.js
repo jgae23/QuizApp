@@ -57,10 +57,10 @@ router.post("/signup", async (req, res) => {
 
     if (createErr) throw createErr;
     // Ensure profile row exists in public.profiles (optional, depends on your setup)
-    await supabaseService.from("profiles").upsert(
+    /*await supabaseService.from("profiles").upsert(
       [{ id: newUser.id, username: userName, email }],
       { onConflict: "id" }
-    );
+    );*/
 
     // Sign app token
     const token = signAppToken({ userID: newUser.id, username: userName });
