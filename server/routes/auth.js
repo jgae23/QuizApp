@@ -92,7 +92,7 @@ router.post("/signup", async (req, res) => {
     const newUser = await createAuthUser(email, password, userName);
     if (!newUser) return res.status(500).json({ message: "Failed to create user" });
 
-    if (createErr) throw createErr;
+    //if (createErr) throw createErr;
 
     // Ensure profile row exists in public.profiles after createUser
     const profile = await ensureProfileExists(newUser.user.id, newUser.user.email, userName);
