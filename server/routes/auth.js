@@ -239,7 +239,7 @@ router.post("/google", async (req, res) => {
 
     res.json({
       message: "Login successful",
-      userName: username,
+      userName: name,
       userID: authUser.id,
       token: appToken,
     });
