@@ -5,7 +5,6 @@ import bcrypt from "bcrypt";
 import { auth, OAuth2Client } from "google-auth-library";
 import dotenv from "dotenv";
 import jwt from "jsonwebtoken";
-import { use } from "react";
 
 dotenv.config();
 
@@ -238,15 +237,15 @@ router.post("/google", async (req, res) => {
     // Sign app token
     const appToken = signAppToken({ userID: authUser.id, username: name });
 
-    res.status(201).json({
-      message: "Signup successful",
-      userName: name,
+    res.json({
+      message: "Login successful",
+      userName: username,
       userID: authUser.id,
-      appToken,
+      token: appToken,
     });
   } catch (error) {
     console.error("OAuth error:", error);
-    res.status(500).json({ message: "Invalid token", error: error.message });
+    res.status(401).json({ error: "Invalid token", details: error.message });
   }
 });
 
