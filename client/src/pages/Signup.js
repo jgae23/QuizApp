@@ -11,6 +11,12 @@ const Signup = () => {
   const [isLoading, setIsLoading] = useState(false);
   const navigate = useNavigate();
 
+  localStorage.removeItem("isLogin");
+  localStorage.removeItem("userName");
+  localStorage.removeItem("userID");
+  localStorage.removeItem("token");
+  localStorage.removeItem("supabase_access_token");
+
   // Helper function to handle successful authentication (both regular and Google)
   const onAuthSuccess = (data, isGoogleAuth = false) => {
     console.log("Auth success data:", data);
@@ -106,23 +112,6 @@ const Signup = () => {
     setIsLoading(true);
 
     try {
-        // Clear any existing session data before new login
-        localStorage.removeItem("isLogin");
-        localStorage.removeItem("userName");
-        localStorage.removeItem("userID");
-        localStorage.removeItem("token");
-        localStorage.removeItem("supabase_access_token");
-
-        // Optional: Log Google token info for debugging
-        //let googleUserEmail = '';
-        /*try {
-            const decoded = jwtDecode(token);
-            googleUserEmail = decoded.email;
-            console.log("Google token payload:", decoded);
-        } catch (err) {
-            console.warn("Could not decode Google token:", err);
-        }*/
-
         const response = await fetch("https://quiz-backend-5rjf.onrender.com/api/auth/google", {
             method: "POST",
             headers: { "Content-Type": "application/json" },
