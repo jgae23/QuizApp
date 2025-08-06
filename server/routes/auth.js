@@ -199,29 +199,87 @@ router.post("/google", async (req, res) => {
       audience: process.env.GOOGLE_CLIENT_ID,
     });
     const payload = ticket.getPayload();
-    const { email, name, sub: googleId } = payload;
+    const email = payload?.email;
+    const name = payload?.name ?? payload?.given_name ?? null;
 
-    // Try to find existing auth user by email (admin REST)
-    let authUser = await fetchAuthUserByEmail(email);
-
-    if (!authUser) {
-        const createUser = await createAuthUser(email, Math.random().toString(36).slice(-12), name);
-        if (!createUser) return res.status(500).json({ message: "Failed to create user" });
-        authUser = createUser;
-
-        // Ensure a profile row exists in public.profiles (server uses service key -> bypass RLS)
-        const profile = await ensureProfileExists(authUser.user.id, authUser.user.email, name);
-        if (!profile) return res.status(500).json({ message: "Failed to create user profile" });
-        console.log("Profile created successfully:", profile);
+    if (!email) {
+      console.error("Google token payload missing email:", payload);
+      return res.status(400).json({ error: "Google token missing email" });
     }
 
-    // Sign app token
-    const appToken = signAppToken({ userID: authUser.user.id, username: name });
+    // 1) Check existence (your helper returns truthy if exists)
+    const exists = await fetchAuthUserByEmail(email);
+
+    // We'll always normalize to a single userId variable
+    let userId = null;
+
+    if (!exists) {
+      // create user (createAuthUser returns the admin create result)
+      const created = await createAuthUser(email, Math.random().toString(36).slice(-12), name ?? email);
+
+      // normalize created shape: try created.user, created.data, or created
+      const createdUser = created?.user ?? created?.data ?? created;
+      if (!createdUser || !createdUser.id) {
+        console.error("createAuthUser returned unexpected shape:", created);
+        return res.status(500).json({ message: "Failed to create user" });
+      }
+      userId = createdUser.id;
+
+      // best-effort profile creation
+      try {
+        await ensureProfileExists(userId, createdUser.email ?? email, name ?? email);
+      } catch (err) {
+        console.warn("ensureProfileExists failed (non-fatal):", err);
+      }
+    } else {
+      // If user exists, get its id via your RPC (returns array of rows)
+      const { data: rpcData, error: rpcErr } = await supabaseService.rpc('get_user_id_by_email', { email });
+      if (rpcErr) {
+        console.error("RPC get_user_id_by_email error:", rpcErr);
+        throw rpcErr;
+      }
+      if (Array.isArray(rpcData) && rpcData.length > 0 && rpcData[0].id) {
+        userId = rpcData[0].id;
+      } else {
+        // fallback to searching admin list (rare)
+        let page = 1;
+        while (!userId) {
+          const { data, error } = await supabaseService.auth.admin.listUsers({ page, perPage: 1000 });
+          if (error) {
+            console.error("admin.listUsers error:", error);
+            throw error;
+          }
+          const users = data?.users ?? data?.data ?? [];
+          const found = users.find(u => u.email === email);
+          if (found) {
+            userId = found.id;
+            break;
+          }
+          if (!users || users.length === 0) break;
+          page++;
+        }
+      }
+
+      // best-effort ensure profile exists
+      try {
+        await ensureProfileExists(userId, email, name ?? email);
+      } catch (err) {
+        console.warn("ensureProfileExists (existing user) failed (non-fatal):", err);
+      }
+    }
+
+    if (!userId) {
+      console.error("No userId after google flow for email:", email);
+      return res.status(500).json({ error: "Google login response is missing user information. Please try again." });
+    }
+
+    // Sign token once with the normalized userId
+    const appToken = signAppToken({ userID: userId, username: name ?? email });
 
     res.json({
       message: "Login successful",
-      userName: name,
-      userID: authUser.id,
+      userName: name ?? email,
+      userID: userId,
       token: appToken,
     });
   } catch (error) {
@@ -229,5 +287,6 @@ router.post("/google", async (req, res) => {
     res.status(401).json({ error: "Invalid token", details: error.message });
   }
 });
+
 
 export default router;
