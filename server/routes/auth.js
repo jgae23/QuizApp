@@ -204,38 +204,19 @@ router.post("/google", async (req, res) => {
     // Try to find existing auth user by email (admin REST)
     let authUser = await fetchAuthUserByEmail(email);
 
-    // If not found, create via admin.createUser
-    /*if (!authUser) {
-      const { data: createdUser, error: createErr } = await supabaseService.auth.admin.createUser({
-        email,
-        password: Math.random().toString(36).slice(-12), // random password; user uses OAuth
-        email_confirm: true,
-        user_metadata: { username: name, googleId },
-      });
-      if (createErr) throw createErr;
-      authUser = createdUser;
-    }*/
-
     if (!authUser) {
         const createUser = await createAuthUser(email, Math.random().toString(36).slice(-12), name);
         if (!createUser) return res.status(500).json({ message: "Failed to create user" });
         authUser = createUser;
 
         // Ensure a profile row exists in public.profiles (server uses service key -> bypass RLS)
-        const profile = await ensureProfileExists(authUser.id, email, name);
+        const profile = await ensureProfileExists(authUser.user.id, authUser.user.email, name);
         if (!profile) return res.status(500).json({ message: "Failed to create user profile" });
         console.log("Profile created successfully:", profile);
     }
 
-    /*await supabaseService.from("profiles").upsert(
-      [{ id: authUser.id, username: name, email }],
-      { onConflict: "id" }
-    );*/
-
-    //const username = authUser.user_metadata?.username ?? name ?? authUser.email;
-
     // Sign app token
-    const appToken = signAppToken({ userID: authUser.id, username: name });
+    const appToken = signAppToken({ userID: authUser.user.id, username: name });
 
     res.json({
       message: "Login successful",
