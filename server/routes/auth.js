@@ -2,7 +2,7 @@
 import express from "express";
 import supabaseService from "../config/supabaseServiceClient.js"; // service-role client
 import bcrypt from "bcrypt";
-import { OAuth2Client } from "google-auth-library";
+import { auth, OAuth2Client } from "google-auth-library";
 import dotenv from "dotenv";
 import jwt from "jsonwebtoken";
 
@@ -34,6 +34,36 @@ const fetchAuthUserByEmail = async (email) => {
   return Array.isArray(data) && data.length > 0;
 };
 
+// Create auth user via admin API (service role)
+const createAuthUser = async (email, password, userName) => {
+  const { data, error } = await supabaseService.auth.admin.createUser({
+    email,
+    password, // admin will store/ hash password securely
+    email_confirm: true,
+    user_metadata: { username: userName },
+  });   
+}
+
+// Ensure profile row exists in public.profiles after createUser
+const ensureProfileExists = async (userID, email, userName) => {
+  const { data, error } = await supabaseService
+    .from("profiles")
+    .insert({
+      id: userID, // <- UUID from auth.users
+      email,
+      username: userName, // <- from req.body, or newUser.user.user_metadata.username
+      created_at: new Date().toISOString()
+    })
+    .select()
+    .single();
+
+  if (error) {
+    console.error("Profile creation error:", error);
+    throw new Error("Failed to create user profile");
+  }
+
+  return data;
+};
 
 // ------------------ SIGNUP ------------------
 // Creates an auth user using the admin API and returns an app JWT
@@ -48,17 +78,23 @@ router.post("/signup", async (req, res) => {
     if (existing) return res.status(400).json({ message: "Email already in use" });
 
     // Create auth user via admin API (service role)
-    const { data: newUser, error: createErr } = await supabaseService.auth.admin.createUser({
+    /*const { data: newUser, error: createErr } = await supabaseService.auth.admin.createUser({
       email,
       password, // admin will store/ hash password securely
       email_confirm: true,
       user_metadata: { username: userName },
-    });
+    });*/
+    const newUser = await createAuthUser(email, password, userName);
+    if (!newUser) return res.status(500).json({ message: "Failed to create user" });
 
     if (createErr) throw createErr;
-    // Ensure profile row exists in public.profiles (optional, depends on your setup)
-    // after createUser
-    const { data: profile, error: profileError } = await supabaseService
+
+    // Ensure profile row exists in public.profiles after createUser
+    const profile = await ensureProfileExists(newUser.user.id, newUser.user.email, userName);
+    if (!profile) return res.status(500).json({ message: "Failed to create user profile" });
+    console.log("Profile created successfully:", profile);
+
+    /*const { data: profile, error: profileError } = await supabaseService
         .from("profiles")
         .insert({
             id: newUser.user.id, // <- UUID from auth.users
@@ -72,10 +108,10 @@ router.post("/signup", async (req, res) => {
     if (profileError) {
         console.error("Profile creation error:", profileError);
         throw new Error("Failed to create user profile");
-    }
+    }*/
 
 
-    console.log("Profile created successfully:", profile);
+    //console.log("Profile created successfully:", profile);
 
     /*await supabaseService.from("profiles").upsert(
       [{ id: newUser.id, username: userName, email }],
@@ -164,7 +200,7 @@ router.post("/google", async (req, res) => {
     let authUser = await fetchAuthUserByEmail(email);
 
     // If not found, create via admin.createUser
-    if (!authUser) {
+    /*if (!authUser) {
       const { data: createdUser, error: createErr } = await supabaseService.auth.admin.createUser({
         email,
         password: Math.random().toString(36).slice(-12), // random password; user uses OAuth
@@ -173,13 +209,23 @@ router.post("/google", async (req, res) => {
       });
       if (createErr) throw createErr;
       authUser = createdUser;
+    }*/
+
+    if (!authUser) {
+        const createUser = await createAuthUser(email, Math.random().toString(36).slice(-12), name);
+        if (!createUser) return res.status(500).json({ message: "Failed to create user" });
+        authUser = createUser;
     }
 
     // Ensure a profile row exists in public.profiles (server uses service key -> bypass RLS)
-    await supabaseService.from("profiles").upsert(
+    const profile = await ensureProfileExists(authUser.id, email, name);
+    if (!profile) return res.status(500).json({ message: "Failed to create user profile" });
+    console.log("Profile created successfully:", profile);
+
+    /*await supabaseService.from("profiles").upsert(
       [{ id: authUser.id, username: name, email }],
       { onConflict: "id" }
-    );
+    );*/
 
     const username = authUser.user_metadata?.username ?? name ?? authUser.email;
 
