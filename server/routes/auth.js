@@ -76,6 +76,7 @@ router.post("/signup", async (req, res) => {
 
   try {
     // If user exists in auth.users, reject
+    console.log("fetchAuthUserByEmail called with email at 49:", email);
     const existing = await fetchAuthUserByEmail(email);
     if (existing) return res.status(400).json({ message: "Email already in use" });
 
@@ -147,6 +148,7 @@ router.post("/login", async (req, res) => {
   }
 });
 
+
 // ------------------ GOOGLE OAUTH ------------------
 // Frontend sends Google ID token (credential). Server verifies it with Google,
 // then finds or creates an auth user (via admin API), upserts profile, and returns app JWT.
@@ -169,7 +171,7 @@ router.post("/google", async (req, res) => {
       return res.status(400).json({ error: "Google token missing email" });
     }
 
-    // Check existence
+    // 1) Check existence (your helper returns truthy if exists)
     const exists = await fetchAuthUserByEmail(email);
 
     // We'll always normalize to a single userId variable
@@ -242,6 +244,5 @@ router.post("/google", async (req, res) => {
     res.status(401).json({ error: "Invalid token", details: error.message });
   }
 });
-
 
 export default router;
