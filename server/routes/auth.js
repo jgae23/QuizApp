@@ -259,13 +259,6 @@ router.post("/google", async (req, res) => {
           page++;
         }
       }
-
-      // best-effort ensure profile exists
-      try {
-        await ensureProfileExists(userId, email, name ?? email);
-      } catch (err) {
-        console.warn("ensureProfileExists (existing user) failed (non-fatal):", err);
-      }
     }
 
     if (!userId) {
