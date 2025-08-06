@@ -41,7 +41,12 @@ const createAuthUser = async (email, password, userName) => {
     password, // admin will store/ hash password securely
     email_confirm: true,
     user_metadata: { username: userName },
-  });   
+  });  
+  if (error) {
+    console.error("Error creating auth user:", error);
+    throw error;
+  }  
+  return data;
 }
 
 // Ensure profile row exists in public.profiles after createUser
