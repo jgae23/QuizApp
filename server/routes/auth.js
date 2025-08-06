@@ -5,6 +5,7 @@ import bcrypt from "bcrypt";
 import { auth, OAuth2Client } from "google-auth-library";
 import dotenv from "dotenv";
 import jwt from "jsonwebtoken";
+import { use } from "react";
 
 dotenv.config();
 
@@ -220,32 +221,32 @@ router.post("/google", async (req, res) => {
         const createUser = await createAuthUser(email, Math.random().toString(36).slice(-12), name);
         if (!createUser) return res.status(500).json({ message: "Failed to create user" });
         authUser = createUser;
-    }
 
-    // Ensure a profile row exists in public.profiles (server uses service key -> bypass RLS)
-    const profile = await ensureProfileExists(authUser.id, email, name);
-    if (!profile) return res.status(500).json({ message: "Failed to create user profile" });
-    console.log("Profile created successfully:", profile);
+        // Ensure a profile row exists in public.profiles (server uses service key -> bypass RLS)
+        const profile = await ensureProfileExists(authUser.id, email, name);
+        if (!profile) return res.status(500).json({ message: "Failed to create user profile" });
+        console.log("Profile created successfully:", profile);
+    }
 
     /*await supabaseService.from("profiles").upsert(
       [{ id: authUser.id, username: name, email }],
       { onConflict: "id" }
     );*/
 
-    const username = authUser.user_metadata?.username ?? name ?? authUser.email;
+    //const username = authUser.user_metadata?.username ?? name ?? authUser.email;
 
     // Sign app token
-    const appToken = signAppToken({ userID: authUser.id, username });
+    const appToken = signAppToken({ userID: authUser.id, username: name });
 
-    res.json({
-      message: "Login successful",
-      userName: username,
+    res.status(201).json({
+      message: "Signup successful",
+      userName: name,
       userID: authUser.id,
-      token: appToken,
+      appToken,
     });
   } catch (error) {
     console.error("OAuth error:", error);
-    res.status(401).json({ error: "Invalid token", details: error.message });
+    res.status(500).json({ message: "Invalid token", error: error.message });
   }
 });
 
