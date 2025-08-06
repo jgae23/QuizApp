@@ -106,21 +106,28 @@ const Signup = () => {
     setIsLoading(true);
 
     try {
-      // Optional: Log Google token info for debugging
-      try {
-        const decoded = jwtDecode(token);
-        console.log("Google signup token payload:", decoded);
-      } catch (err) {
-        console.warn("Could not decode Google token:", err);
-      }
+        // Clear any existing session data before new login
+        localStorage.removeItem("isLogin");
+        localStorage.removeItem("userName");
+        localStorage.removeItem("userID");
+        localStorage.removeItem("token");
+        localStorage.removeItem("supabase_access_token");
 
-      // Call the same Google OAuth endpoint as login
-      // Your backend should handle both login and signup for existing/new users
-      const response = await fetch("https://quiz-backend-5rjf.onrender.com/api/auth/google", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ credential: token }),
-      });
+        // Optional: Log Google token info for debugging
+        //let googleUserEmail = '';
+        /*try {
+            const decoded = jwtDecode(token);
+            googleUserEmail = decoded.email;
+            console.log("Google token payload:", decoded);
+        } catch (err) {
+            console.warn("Could not decode Google token:", err);
+        }*/
+
+        const response = await fetch("https://quiz-backend-5rjf.onrender.com/api/auth/google", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ credential: token }),
+    });
 
       const data = await response.json();
       console.log("Google signup response:", data);

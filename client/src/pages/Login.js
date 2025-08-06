@@ -45,6 +45,7 @@ const Login = () => {
 
     const handleGoogleSuccess = (credentialResponse) => {
         const token = credentialResponse.credential;
+      
 
         fetch("https://quiz-backend-5rjf.onrender.com/api/auth/google", {
             method: "POST",
