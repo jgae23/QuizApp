@@ -20,48 +20,40 @@ const Signup = () => {
   // Helper function to handle successful authentication (both regular and Google)
   const onAuthSuccess = (data, isGoogleAuth = false) => {
     console.log("Auth success data:", data);
-    
-    // Multiple fallbacks for userName
-    const finalUserName = data.userName || 
-                          data.username || 
-                          data.user?.username || 
-                          data.user?.userName ||
-                          (data.user?.email ? data.user.email.split('@')[0] : null) ||
-                          (email ? email.split('@')[0] : 'User');
-    
-    // Multiple fallbacks for userID
-    const userID = data.userID || 
-                   data.userId || 
-                   data.user?.id || 
-                   data.user?.userID ||
-                   data.user?.userId;
 
-    if (!userID) {
-      console.error("Auth succeeded but missing userID:", data);
-      alert("Authentication succeeded but user information is incomplete. Please try again.");
-      return;
+    let userID;
+    let finalUserName = data.userName;
+    console.log("I'm here at line 26 in Signup.js");
+
+    if (data.token) {
+        localStorage.setItem("token", data.token);
+
+        try {
+        const decoded = jwtDecode(data.token);
+        console.log("Decoded JWT:", decoded);
+        
+        // Extract from decoded token
+        userID = decoded.userID || decoded.id || decoded._id || decoded.email || decoded.username;
+        finalUserName = finalUserName || decoded.username || decoded.email?.split('@')[0] || "User";
+        } catch (err) {
+        console.warn("Could not decode JWT:", err);
+        }
     }
 
-    // Store user information
+    if (!userID) {
+        console.error("Auth succeeded but missing userID (even after decoding token):", data);
+        alert("Authentication succeeded but user information is incomplete. Please try again.");
+        return;
+    }
+
     localStorage.setItem("isLogin", "true");
     localStorage.setItem("userName", finalUserName);
     localStorage.setItem("userID", String(userID));
-    
-    if (data.token) {
-      localStorage.setItem("token", data.token);
-      
-      // Optional: Decode and log token for debugging
-      try {
-        const decoded = jwtDecode(data.token);
-        console.log("Decoded JWT:", decoded);
-      } catch (err) {
-        console.warn("Could not decode JWT:", err);
-      }
-    }
 
     console.log(`${isGoogleAuth ? 'Google signup' : 'Signup'} successful! Welcome ${finalUserName}`);
     navigate("/");
-  };
+};
+
 
   const handleSignup = async (event) => {
     event.preventDefault();
@@ -84,7 +76,7 @@ const Signup = () => {
       console.log("Signup response:", data);
 
       if (response.ok) {
-        onAuthSuccess(data, false);
+        onAuthSuccess(data, true);
       } else {
         const errorMessage = data.message || data.error || `Signup failed (${response.status})`;
         alert(errorMessage);

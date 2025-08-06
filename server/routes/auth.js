@@ -88,12 +88,12 @@ router.post("/signup", async (req, res) => {
     console.log("Profile created successfully:", profile);
 
     // Sign app token
-    const token = signAppToken({ userID: newUser.id, username: userName });
+    const token = signAppToken({ userID: newUser.user.id, username: userName });
 
     res.status(201).json({
       message: "Signup successful",
       userName,
-      userID: newUser.id,
+      userID: newUser.user.id,
       token,
     });
   } catch (error) {
