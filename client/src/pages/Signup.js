@@ -44,33 +44,61 @@ const Signup = () => {
         setPassword("");
     };
 
-    const handleGoogleSuccess = (credentialResponse) => {
-        const token = credentialResponse.credential;
-
-        fetch("https://quiz-backend-5rjf.onrender.com/api/auth/google", {
+    const handleGoogleSuccess = async (credentialResponse) => {
+        const token = credentialResponse?.credential;
+        if (!token) {
+          alert("Missing Google credential");
+          return;
+        }
+    
+        setIsLoading(true);
+    
+        try {
+          // Optional: Log Google token info for debugging
+          try {
+            const decoded = jwtDecode(token);
+            console.log("Google token payload:", decoded);
+          } catch (err) {
+            console.warn("Could not decode Google token:", err);
+          }
+    
+          const res = await fetch("https://quiz-backend-5rjf.onrender.com/api/auth/google", {
             method: "POST",
             headers: { "Content-Type": "application/json" },
             body: JSON.stringify({ credential: token }),
-        })
-            .then(res => res.json())
-            .then(data => {
-                console.log("Server response:", data);
-                localStorage.setItem("isLogin", "true");
-                localStorage.setItem("userName", data.user.username);
-                localStorage.setItem("userID", String(data.user.userID));
-                navigate("/");
-                // Store JWT or user data if needed
-            })
-            .catch(err => console.error("Auth error", err));
-
-        console.log("Google credential:", credentialResponse);
-        console.log("Decoded token:", jwtDecode(token));
+          });
+    
+          const data = await res.json();
+          console.log("Google auth response:", data);
+    
+          if (!res.ok) {
+            const errorMessage = data.error || data.message || `Google login failed (${res.status})`;
+            alert(errorMessage);
+            return;
+          }
+    
+          // Check if we got the expected data structure
+          if (!data.userID && !data.userId && !data.user?.id) {
+            console.error("Invalid Google auth response structure:", data);
+            alert("Google login response is missing user information. Please try again.");
+            return;
+          }
+    
+          onLoginSuccess(data);
+          
+        } catch (err) {
+          console.error("Google auth error", err);
+          alert("Google login failed. Please try again.");
+        } finally {
+          setIsLoading(false);
+        }
     };
     
     const handleGoogleError = () => {
         console.log("Google login failed");
+        alert("Google login failed. Please try again.");
     };
-
+    
     return (
         <div className="d-flex justify-content-center align-items-center">
             <AuthForm
