@@ -17,9 +17,6 @@ const signAppToken = (payload) => {
   });
 };
 
-console.log("SUPABASE_URL:", process.env.SUPABASE_URL);
-console.log("SUPABASE_SERVICE_ROLE_KEY length:", process.env.SUPABASE_SERVICE_ROLE_KEY?.length);
-
 // Fetch user by email using Supabase Admin API
 const fetchAuthUserByEmail = async (email) => {
   const { data, error } = await supabaseService
@@ -76,7 +73,6 @@ router.post("/signup", async (req, res) => {
 
   try {
     // If user exists in auth.users, reject
-    console.log("fetchAuthUserByEmail called with email at 49:", email);
     const existing = await fetchAuthUserByEmail(email);
     if (existing) return res.status(400).json({ message: "Email already in use" });
 
@@ -86,7 +82,7 @@ router.post("/signup", async (req, res) => {
     // Ensure profile row exists in public.profiles after createUser
     const profile = await ensureProfileExists(newUser.user.id, newUser.user.email, userName);
     if (!profile) return res.status(500).json({ message: "Failed to create user profile" });
-    console.log("Profile created successfully:", profile);
+    //console.log("Profile created successfully:", profile);
 
     // Sign app token
     const token = signAppToken({ userID: newUser.id, username: userName });
