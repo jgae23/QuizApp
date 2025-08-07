@@ -45,7 +45,13 @@ const Login = () => {
 
     const handleGoogleSuccess = (credentialResponse) => {
         const token = credentialResponse.credential;
-      
+
+        localStorage.removeItem("isLogin");
+        localStorage.removeItem("userName");
+        localStorage.removeItem("userID");
+        localStorage.removeItem("token");
+        localStorage.removeItem("supabase_access_token");
+
 
         fetch("https://quiz-backend-5rjf.onrender.com/api/auth/google", {
             method: "POST",
@@ -55,9 +61,10 @@ const Login = () => {
             .then(res => res.json())
             .then(data => {
                 console.log("Server response:", data);
+                console.log("Username from data:", data.userName);
                 localStorage.setItem("isLogin", "true");
-                localStorage.setItem("userName", data.user.username);
-                localStorage.setItem("userID", String(data.user.userID));
+                localStorage.setItem("userName", data.userName);
+                localStorage.setItem("userID", String(data.userID));
                 navigate("/");
                 // Store JWT or user data if needed
             })
@@ -65,6 +72,7 @@ const Login = () => {
 
         console.log("Google credential:", credentialResponse);
         console.log("Decoded token:", jwtDecode(token));
+        console.log("Usernmae from token:", jwtDecode(token).name);
     };
 
     const handleGoogleError = () => {
