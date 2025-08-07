@@ -84,6 +84,8 @@ router.post("/signup", async (req, res) => {
 
     console.log("New user created:", newUser);
     console.log("New user ID:", newUser.user.id);
+    console.log("New user email:", newUser.user.email);
+    console.log("New user metadata:", newUser.user.user_metadata);
 
     // Ensure profile row exists in public.profiles after createUser
     const profile = await ensureProfileExists(newUser.user.id, newUser.user.email, userName);
