@@ -88,9 +88,9 @@ router.post("/signup", async (req, res) => {
     console.log("New user metadata:", newUser.user.user_metadata);
 
     // Ensure profile row exists in public.profiles after createUser
-    const profile = await ensureProfileExists(newUser.user.id, newUser.user.email, userName);
-    if (!profile) return res.status(500).json({ message: "Failed to create user profile" });
-    console.log("Profile created successfully:", profile);
+    //const profile = await ensureProfileExists(newUser.user.id, newUser.user.email, userName);
+    //if (!profile) return res.status(500).json({ message: "Failed to create user profile" });
+    //console.log("Profile created successfully:", profile);
 
     // Sign app token
     const token = signAppToken({ userID: newUser.user.id, username: userName });
@@ -194,11 +194,11 @@ router.post("/google", async (req, res) => {
       userId = createdUser.id;
 
       // best-effort profile creation
-      try {
+      /*try {
         await ensureProfileExists(userId, createdUser.email ?? email, name ?? email);
       } catch (err) {
         console.warn("ensureProfileExists failed (non-fatal):", err);
-      }
+      }*/
     } else {
       // If user exists, get its id via your RPC (returns array of rows)
       const { data: rpcData, error: rpcErr } = await supabaseService.rpc('get_user_id_by_email', { email });
