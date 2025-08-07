@@ -60,7 +60,7 @@ const Login = () => {
         })
             .then(res => res.json())
             .then(data => {
-                console.log("Server response:", data);
+                //console.log("Server response:", data);
                 console.log("Username from data:", data.userName);
                 localStorage.setItem("isLogin", "true");
                 localStorage.setItem("userName", data.userName);

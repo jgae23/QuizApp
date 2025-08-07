@@ -76,7 +76,7 @@ const Signup = () => {
       console.log("Signup response:", data);
 
       if (response.ok) {
-        onAuthSuccess(data, true);
+        onAuthSuccess(data, false);
       } else {
         const errorMessage = data.message || data.error || `Signup failed (${response.status})`;
         alert(errorMessage);
