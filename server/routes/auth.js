@@ -17,8 +17,8 @@ const signAppToken = (payload) => {
   });
 };
 
-console.log("SUPABASE_URL:", process.env.SUPABASE_URL);
-console.log("SUPABASE_SERVICE_ROLE_KEY length:", process.env.SUPABASE_SERVICE_ROLE_KEY?.length);
+//console.log("SUPABASE_URL:", process.env.SUPABASE_URL);
+//console.log("SUPABASE_SERVICE_ROLE_KEY length:", process.env.SUPABASE_SERVICE_ROLE_KEY?.length);
 
 // Fetch user by email using Supabase Admin API
 const fetchAuthUserByEmail = async (email) => {
