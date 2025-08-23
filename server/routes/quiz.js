@@ -48,10 +48,12 @@ router.post('/save-questions', async (req, res) => {
           difficulty: difficulty,
         },
       ])
-      .select('id')
+      .select('questionid')
       .single();
     
     if(error) return res.status(500).json({ error: error.message });
+
+    console.log("Response question ID:", data.questionid);
 
     return res.status(200).json({ 
       message: "Questions saved successfully", 
