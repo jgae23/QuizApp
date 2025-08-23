@@ -81,8 +81,7 @@ router.get('/quiz/:userID', async (req, res) => {
         .from('savedresults')
         .select('*')
         .eq('profileid', userID)
-        .order('createdAt', { ascending: false }) // DESC
-        .single();
+        .order('createdAt', { ascending: false }); // DESC
 
       res.json(quizzes);
     } catch (err) {

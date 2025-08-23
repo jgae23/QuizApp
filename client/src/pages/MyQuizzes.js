@@ -57,7 +57,7 @@ const MyQuizzes = () => {
         const fetchQuizzes = async () => {
         try {
             const res = await axios.get(`https://quiz-backend-5rjf.onrender.com/api/result/quiz/${userID}`);
-            setQuizzes(res.data);
+            setQuizzes(res.data || []);
             setLoading(false);
         } catch (err) {
             console.error("Error fetching quizzes:", err);
