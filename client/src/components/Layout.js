@@ -1,5 +1,5 @@
 // components/Layout.js
-import React from "react";
+import React, { useEffect } from "react";
 import { Outlet, useLocation } from "react-router-dom";
 import 'bootstrap/dist/css/bootstrap.min.css';
 import 'bootstrap-icons/font/bootstrap-icons.css';
@@ -12,6 +12,16 @@ const Layout = () => {
     const location = useLocation();
 
     const isLogin = localStorage.getItem("isLogin") === "true";
+
+    useEffect(() => {
+        const interval = setInterval(() => {
+            fetch("https://quiz-backend-5rjf.onrender.com/api/ping")
+                .then(() => console.log("Pinged backend"))
+                .catch(err => console.error("Ping failed:", err));
+        }, 5 * 60 * 1000); // every 5 minutes
+
+        return () => clearInterval(interval);
+    }, []);
 
     // Choose Navbar based on the current route
     let Navbar;

@@ -11,8 +11,8 @@
     "@testing-library/react": "^16.2.0",
     "@testing-library/user-event": "^13.5.0",
     "axios": "^1.8.4",
-    "bootstrap": "^5.3.5",
-    "bootstrap-icons": "^1.11.3",
+    "bootstrap": "^5.3.7",
+    "bootstrap-icons": "^1.13.1",
     "cors": "^2.8.5",
     "dotenv": "^16.5.0",
     "express": "^5.1.0",
@@ -59,7 +59,6 @@
     "postcss": "^8.5.3",
     "tailwindcss": "^4.0.17"
   },
-
   "jest": {
     "moduleNameMapper": {
       "axios": "<rootDir>/node_modules/axios/dist/node/axios.cjs"

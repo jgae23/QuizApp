@@ -69,6 +69,10 @@ app.use('/api/explanations', explanationRoutes);
 app.use('/api/trivia-quiz', triviaRoutes); // Use the trivia routes module
 app.post('/api/ai-quiz/generate', generateQuiz);
 
+app.get("/api/ping", (req, res) => {
+  res.json({ message: "pong"});
+})
+
 // Keep the existing RapidAPI trivia route for backwards compatibility
 app.get("/api/trivia-old", (req, res) => {
   const category = req.query.category || '';
