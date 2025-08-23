@@ -64,6 +64,8 @@ router.post('/save-results', async (req, res) => {
               ])
               .select('*')
               .single();
+
+            if(error) return res.status(500).json({ error: error.message });
                       
             return res.status(200).json({ message: "Results saved", quiz: saved, attempt: savedAttempt });
         }
@@ -81,7 +83,9 @@ router.get('/quiz/:userID', async (req, res) => {
         .from('savedresults')
         .select('*')
         .eq('profileid', userID)
-        .order('createdAt', { ascending: false }); // DESC
+        .order('createdat', { ascending: false }); // DESC
+      
+      if(error) return res.status(500).json({ error: error.message });
 
       res.json(quizzes);
     } catch (err) {
