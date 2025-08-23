@@ -14,7 +14,7 @@ router.post('/save', async (req, res) => {
           { 
             profileid: userID, 
             quizid: quizID,
-            title: title,
+            title: topic,
             explanationdata: explanationData
            },
         ])

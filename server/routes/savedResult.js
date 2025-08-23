@@ -13,7 +13,7 @@ router.post('/save-results', async (req, res) => {
             return res.status(400).json({ error: "Missing required fields" });
         }
 
-        const { data, error } = await supabase
+        const { data: savedAttempt, error } = await supabase
           .from('attempts')
           .insert({
             profileid: userID,
@@ -24,36 +24,47 @@ router.post('/save-results', async (req, res) => {
             totalquestions: total,
           })
           
-
+        if(error) return res.status(500).json({ error: error.message });
         // Look for an existing result for this quiz and user
-        const existingResult = await Result.findOne({ where: { quizID, userID } });
+        //const existingResult = await Result.findOne({ where: { quizID, userID } });
+        const { data: existingResult, findError } = await supabase
+          .from('savedresults')
+          .select('*')
+          .eq('quizid', quizID)
+          .eq('profileid', userID)
+          .single();
+
+        if(findError) return res.status(500).json({ findError: findError.message });
 
         if (existingResult) {
             // Update the existing result if new score is greater than old one
             if(score > existingResult.score) {
-                existingResult.score = score;
-                existingResult.explanationID = explanationID;
-                existingResult.createdAt = new Date(); // optional: update timestamp
-
-                await existingResult.save();
+                const { data, error } = await supabase
+                  .from('savedresults')
+                  .update({ score: score}, {explanationid: explanationID}, { createdat: new Date() })
+                  .eq('rsltid', existingResult.rsltid)
 
                 return res.status(200).json({ message: "Result updated", quiz: existingResult, attempt: savedAttempt });
             } else {
                 return res.status(200).json({ message: "Score not improved", quiz: existingResult, attempt: savedAttempt });
             }
-        } else {
-            const saved = await Result.create({
-                userID,
-                quizID,
-                explanationID,
-                topic,
-                difficulty,
-                score,
-                totalQuestions: total,
-                attempts,
-                createdAt: new Date(),
-            });
-      
+        } else { 
+            const { data: saved, error } = await supabase
+              .from('savedresults')
+              .insert([
+                { profileid: userID,
+                  quizid: quizID,
+                  explanationid: explanationID,
+                  topic: topic,
+                  difficulty: difficulty,
+                  score: score,
+                  totalquestions: total,
+                  totalattempts: attempts,
+               },
+              ])
+              .select('*')
+              .single();
+                      
             return res.status(200).json({ message: "Results saved", quiz: saved, attempt: savedAttempt });
         }
 
@@ -66,10 +77,13 @@ router.post('/save-results', async (req, res) => {
 router.get('/quiz/:userID', async (req, res) => {
     try {
       const { userID } = req.params;
-      const quizzes = await Result.findAll({
-        where: { userID },
-        order: [['createdAt', 'DESC']]
-      });
+      const { data: quizzes, error } = await supabase
+        .from('savedresults')
+        .select('*')
+        .eq('profileid', userID)
+        .order('createdAt', { ascending: false }) // DESC
+        .single();
+
       res.json(quizzes);
     } catch (err) {
       console.error("Error fetching quizzes:", err);
@@ -81,9 +95,14 @@ router.get('/quiz/:userID', async (req, res) => {
 router.get('/attempts/:userID/:quizID', async (req, res) => {
   try {
     const { userID, quizID } = req.params; 
-    const attempts = await Attempts.findAll({
-      where: { userID, quizID },
-    });
+
+    const { data: attempts, error } = await supabase
+      .from('attempts')
+      .select('*')
+      .eq('profileid', userID)
+      .eq('quizid', quizID)
+      .single();
+
     res.json(attempts);
   } catch (err) {
     console.error("Error fetching attempts:", err);
@@ -95,9 +114,13 @@ router.get('/attempts/:userID/:quizID', async (req, res) => {
 router.get('/attempts/:userID/', async (req, res) => {
   try {
     const { userID } = req.params; 
-    const attempts = await Attempts.findAll({
-      where: { userID },
-    });
+
+    const { data: attempts, error } = await supabase
+      .from('attempts')
+      .select('*')
+      .eq('profileid', userID)
+      .single();
+
     res.json(attempts);
   } catch (err) {
     console.error("Error fetching attempts:", err);
