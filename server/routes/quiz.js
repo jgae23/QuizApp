@@ -12,11 +12,18 @@ router.post('/create', async (req, res) => {
       if (!title) {
         return res.status(400).json({ error: "Missing required fields" });
       }
-      const saved = await Quiz.create({
-        title,
-      });
 
-      return res.status(200).json({ message: "Quiz saved", quizID: saved.quizID });
+      const { data, error } = await supabase
+        .from('quizzes')
+        .insert([
+          { title: title, },
+        ])
+        .select('id')
+        .single();
+      
+      if(error) return res.status(500).json({ error: error.message });
+
+      return res.status(200).json({ message: "Quiz saved", quizID: data.quizid });
   } catch (error) {
     console.error("🔥 Error saving quiz:", error);
     return res.status(500).json({ error: "Internal server error" });
@@ -29,16 +36,24 @@ router.post('/save-questions', async (req, res) => {
     const { quizID, title, questions, difficulty } = req.body;
     
     // Save all questions in bulk
-    const savedQuestion = await Question.create({
-      quizID,
-      title,
-      questions,
-      difficulty,
-    });
+    const { data, error } = await supabase
+      .from('questions')
+      .insert([
+        { 
+          quizid: quizID,
+          title: title,
+          content: questions,
+          difficulty: difficulty,
+        },
+      ])
+      .select('id')
+      .single();
     
+    if(error) return res.status(500).json({ error: error.message });
+
     return res.status(200).json({ 
       message: "Questions saved successfully", 
-      questionID: savedQuestion.questionID 
+      questionID: data.questionid
     });
   } catch (error) {
     console.error("Error saving questions:", error);
@@ -50,10 +65,16 @@ router.post('/save-questions', async (req, res) => {
 router.get('/questions/:quizID', async (req, res) => {
   try {
     const { quizID } = req.params;
-    const questions = await Question.findOne({
-      where: { quizID }
-    });
-    return res.json(questions);
+
+  let { data: questions, error } = await supabase
+    .from('questions')
+    .select('content')
+    .eq('quizid', quizID)
+    .single();
+
+    if(error) return res.status(500).json({ error: error.message });
+  
+    return res.json(questions.content);
   } catch (error) {
     console.error("Error fetching questions:", error);
     return res.status(500).json({ error: "Internal server error" });

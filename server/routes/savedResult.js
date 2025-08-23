@@ -13,15 +13,17 @@ router.post('/save-results', async (req, res) => {
             return res.status(400).json({ error: "Missing required fields" });
         }
 
-        const savedAttempt = await Attempts.create({
-            userID,
-            quizID,
-            explanationID,
+        const { data, error } = await supabase
+          .from('attempts')
+          .insert({
+            profileid: userID,
+            quizid: quizID,
+            explanationid: explanationID,
             title: topic,
-            score,
-            totalQuestions: total,
-            createdAt: new Date(),
-        });
+            score: score,
+            totalquestions: total,
+          })
+          
 
         // Look for an existing result for this quiz and user
         const existingResult = await Result.findOne({ where: { quizID, userID } });

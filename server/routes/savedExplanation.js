@@ -7,17 +7,25 @@ const router = express.Router();
 router.post('/save', async (req, res) => {
     try {
       const { userID, quizID, explanationData, topic } = req.body;
+
+      const { data, error } = await supabase
+        .from('savedexplanations')
+        .insert([
+          { 
+            profileid: userID, 
+            quizid: quizID,
+            title: title,
+            explanationdata: explanationData
+           },
+        ])
+        .select('explanationid')
+        .single();
       
-      const explanation = await Explanations.create({
-        userID,
-        quizID,
-        title: topic,
-        explanationData
-      });
+      if(error) return res.status(500).json({ error: error.message });
       
       return res.status(200).json({ 
         message: "Explanations saved", 
-        explanationID: explanation.explanationID 
+        explanationID: data.explanationid
       });
     } catch (err) {
       console.error("Error saving explanations:", err);
@@ -29,15 +37,19 @@ router.get('/:userID/:explanationID', async (req, res) => {
   const { userID, explanationID } = req.params;
 
   try {
-    const explanation = await Explanations.findOne({
-      where: { userID, explanationID },
-    });
+    let { data, error } = await supabase
+      .from('savedexplanations')
+      .select('title,explanationdata')
+      .eq('profileid', userID)
+      .eq('explanationid', explanationID)
+      .single();
+  
 
-    if (!explanation) return res.status(404).json({ error: "Not found" });
+    if(error) return res.status(500).json({ error: error.message });
 
     res.json({
-      title: explanation.title,
-      questions: explanation.explanationData
+      title: data.title,
+      questions: data.explanationdata,
     });
 
   } catch (err) {
