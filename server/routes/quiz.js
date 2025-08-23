@@ -18,10 +18,12 @@ router.post('/create', async (req, res) => {
         .insert([
           { title: title, },
         ])
-        .select('id')
+        .select('quizid')
         .single();
       
       if(error) return res.status(500).json({ error: error.message });
+
+      console.log("Saving quiz ID:", data.quizid);
 
       return res.status(200).json({ message: "Quiz saved", quizID: data.quizid });
   } catch (error) {
