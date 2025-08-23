@@ -104,7 +104,6 @@ router.get('/attempts/:userID/:quizID', async (req, res) => {
       .select('*')
       .eq('profileid', userID)
       .eq('quizid', quizID)
-      .single();
 
     res.json(attempts);
   } catch (err) {
@@ -122,7 +121,6 @@ router.get('/attempts/:userID/', async (req, res) => {
       .from('attempts')
       .select('*')
       .eq('profileid', userID)
-      .single();
 
     res.json(attempts);
   } catch (err) {

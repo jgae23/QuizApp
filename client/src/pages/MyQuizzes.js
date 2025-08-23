@@ -84,7 +84,7 @@ const MyQuizzes = () => {
                 ) : (
                     <div className="row row-cols-1 row-cols-md-2 g-4">
                         {quizzes.map((quiz) => (
-                            <div key={quiz.quizID} className="col">
+                            <div key={quiz.quizid} className="col">
                                 <div className="card bg-dark text-light h-100 border-primary">
                                     <div className="card-body">
                                         <div className="d-flex justify-content-between align-items-center mb-2">
@@ -109,7 +109,7 @@ const MyQuizzes = () => {
                                                         {children}
                                                     </div>
                                                     )}
-                                                    id={`dropdown-${quiz.quizID}`}
+                                                    id={`dropdown-${quiz.quizid}`}
                                                 >
                                                     <i className="bi bi-three-dots-vertical"></i>
                                                 </Dropdown.Toggle>
@@ -123,18 +123,18 @@ const MyQuizzes = () => {
                                                         boxShadow: '0 4px 8px rgba(0, 0, 0, 0.2)' // Add subtle shadow for depth
                                                     }} 
                                                 >
-                                                    <Dropdown.Item onClick={() => onViewExplanations(quiz.explanationID)}>
+                                                    <Dropdown.Item onClick={() => onViewExplanations(quiz.explanationid)}>
                                                         <i className="bi bi-question-circle me-2"></i> View Explanations
                                                     </Dropdown.Item>
-                                                    <Dropdown.Item onClick={() => onViewAttempts(quiz.quizID)}>
+                                                    <Dropdown.Item onClick={() => onViewAttempts(quiz.quizid)}>
                                                         <i className="bi bi-clock-history me-2"></i> View Attempts
                                                     </Dropdown.Item>
-                                                    <Dropdown.Item onClick={() => onRetakeQuiz(quiz.quizID)}>
+                                                    <Dropdown.Item onClick={() => onRetakeQuiz(quiz.quizid)}>
                                                         <i className="bi bi-arrow-repeat me-2"></i> Retake Quiz
                                                     </Dropdown.Item>
                                                     <Dropdown.Divider />
                                                     <Dropdown.Item 
-                                                        onClick={() => handleDelete(quiz.explanationID, quiz.quizID)}
+                                                        onClick={() => handleDelete(quiz.explanationid, quiz.quizid)}
                                                         className="text-danger"
                                                     >
                                                         <i className="bi bi-trash me-2"></i> Delete Quiz
@@ -144,7 +144,7 @@ const MyQuizzes = () => {
                                         </div>
                                         <div className="d-flex justify-content-between">
                                                 <p className="card-text mb-1">
-                                                    Taken on {new Date(quiz.createdAt).toLocaleDateString()}
+                                                    Taken on {new Date(quiz.createdat).toLocaleDateString()}
                                                 </p>
                                                 <span className={`badge ${getDifficultyBadge(quiz.difficulty)}`}
                                                         style={{
@@ -159,10 +159,10 @@ const MyQuizzes = () => {
                                         </div>
                                         <div className="d-flex justify-content-between mt-2">
                                             <span className="badge bg-success">
-                                                {quiz.score}/{quiz.totalQuestions}
+                                                {quiz.score}/{quiz.totalquestions}
                                             </span>
                                             <span className="text-end small">
-                                                Accuracy: {Math.round((quiz.score / quiz.totalQuestions) * 100)}%
+                                                Accuracy: {Math.round((quiz.score / quiz.totalquestions) * 100)}%
                                             </span>
                                         </div>
                                     </div>
