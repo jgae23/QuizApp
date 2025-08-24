@@ -8,13 +8,12 @@ router.delete("/:attemptID", async (req, res) => {
   const { attemptID } = req.params;
 
   try {
-    const deleted = await Attempts.destroy({
-      where: { attemptID },
-    });
+    const { data: deleted, error } = await supabase
+      .from('attempts')
+      .delete()
+      .eq('attemptid', attemptID)
 
-    if (deleted === 0) {
-      return res.status(404).json({ message: "Attempt not found." });
-    }
+    if(error) return res.status(500).json({ error: error.message });
 
     res.status(200).json({ message: "Attempt deleted successfully." });
   } catch (err) {
@@ -29,19 +28,27 @@ router.delete("/:userID/:quizID/:explanationID", async (req, res) => {
     try {
     
       // Delete quiz result  
-      const deleted = await Result.destroy({
-        where: { userID, explanationID },
-      });
+      const { data: deleted, error } = await supabase
+        .from('savedresults')
+        .delete()
+        .eq('profileid', userID)
+        .eq('explanationid', explanationID)
   
-      if (deleted === 0) {
-        return res.status(404).json({ message: "quiz result not found." });
-      }
+      if(error) return res.status(500).json({ error: error.message });
+
       // Delete quiz attempt
-      await Attempts.destroy({ where: { userID, quizID } });
+      const { data, findError } = await supabase
+        .from('attempts')
+        .delete()
+        .eq('profileid', userID)
+        .eq('quizid', quizID)
 
       // Delete quiz explanation
-      await Explanations.destroy({ where: { userID, quizID }});
-
+      const { data: expla_deleted, finderror } = await supabase
+        .from('savedexplanations')
+        .delete()
+        .eq('profileid', userID)
+        .eq('quizid', quizID)
   
       res.status(200).json({ message: "Results deleted successfully." });
     } catch (err) {

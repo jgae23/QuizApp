@@ -7,12 +7,25 @@ const router = express.Router();
 router.get('/api/user/:userID/stats', async (req, res) => {
     const{userID} = req.params; // retrieves user id
     try{
-      const attempts = await Attempts.findAll({ where: {userID} }); // find all attempts from user
-      const quizzesCompleted = attempts.length; // count
-      const totalScore = attempts.reduce((sum, attempt) => sum + attempt.score, 0); // the reduce function helps find the sum of the attempts.
+      const { data: attempts, error } = await supabase
+        .from('attempts')
+        .select('*')
+        .eq('profileid', userID)
+
+      if(error) { console.error(error) }
+      else { console.log("Attempts:", attempts); }
+
+      const quizzesCompleted = attempts?.length || 0; // count
+      const totalScore = (attempts || []).reduce((sum, attempt) => sum + attempt.score, 0); // the reduce function helps find the sum of the attempts.
       const averageScore = quizzesCompleted > 0 ? totalScore / quizzesCompleted : 0; // if the quiz completed is > 0, then return the avg. if == 0, then return 0.
   
-      const questionsAnswered = await Result.count({ where: {userID} }); // # of questions answered.
+      const { count: questionsAnswered, findError } = await supabase
+        .from('savedresults')
+        .select('*', { count: 'exact', head: true })
+        .eq('profileid', userID);
+
+      if(findError) { console.findError(findError) }
+      else { console.log("Questions answered:", count); }
   
       res.json({ // response
         quizzesCompleted,
@@ -27,14 +40,20 @@ router.get('/api/user/:userID/stats', async (req, res) => {
 
 // Takes user infos
 router.get('/:userID', async (req, res) => {
+  const { userID } = req.params;
   try {
-      const user = await User.findByPk(req.params.userID);
-      if (!user) return res.status(404).json({ error: 'User not found' });
+      const { data: user, error } = await supabase
+        .from('profiles')
+        .select('*')
+        .eq('id', userID)
+        .single();
+
+      if(error) return res.status(500).json({ error: error.message });
 
       res.json({
           username: user.username,
           email: user.email,
-          joined: user.createdAt // or format it if you want
+          joined: user.createdat // or format it if you want
       });
   } catch (error) {
       console.error('Error fetching user profile:', error);

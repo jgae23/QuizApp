@@ -76,13 +76,13 @@ const AttemptPage = () => {
                     <div
                         className="d-flex align-items-center"
                         style={{ cursor: 'pointer', flexGrow: 1 }}
-                        onClick={() => onViewExplanations(attempt.explanationID)}
+                        onClick={() => onViewExplanations(attempt.explanationid)}
                     >
                         <div className='p-2'>
                             <strong>{attempt.title} Quiz - Attempt #{index + 1}</strong>
                             <div>
                             <small>
-                                Taken on {new Date(attempt.createdAt).toLocaleString()}
+                                Taken on {new Date(attempt.createdat).toLocaleString()}
                             </small>
                             </div>
                         </div>
@@ -91,8 +91,8 @@ const AttemptPage = () => {
                     {/* Score button moved to the right side */}
                     <div className="d-flex align-items-center me-3">
                         <span className="badge bg-primary">
-                            {attempt.score}/{attempt.totalQuestions} (
-                            {Math.round((attempt.score / attempt.totalQuestions) * 100)}%)
+                            {attempt.score}/{attempt.totalquestions} (
+                            {Math.round((attempt.score / attempt.totalquestions) * 100)}%)
                         </span>
                     </div>
                 </div>
@@ -105,7 +105,7 @@ const AttemptPage = () => {
                         cursor: 'pointer',
                         transition: 'background-color 0.3s',
                     }}
-                    onClick={() => handleDelete(attempt.attemptID)}
+                    onClick={() => handleDelete(attempt.attemptid)}
                     onMouseOver={(e) => (e.currentTarget.style.backgroundColor = '#dc3545')} // bg-warning
                     onMouseOut={(e) => (e.currentTarget.style.backgroundColor = '#212529')}  // bg-danger
                     >

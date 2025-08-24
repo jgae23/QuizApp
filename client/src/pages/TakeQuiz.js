@@ -130,7 +130,7 @@ const TakeQuiz = () => {
 
     return (
         <div className="container text-white mt-4 mb-4 p-4 border-0 rounded-4" style={{ backgroundColor: "#1a1a1a" }}>
-            <h1 className="text-center mb-4" style={{ color: '#28a745' }} >{quizTopic} Quiz</h1>
+            <h2 className="text-center mb-4" style={{ color: '#28a745' }} >{quizTopic} Quiz</h2>
 
             {viewMode === 'quiz' && (
                 <QuestionCard
