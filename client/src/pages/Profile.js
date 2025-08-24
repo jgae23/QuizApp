@@ -42,8 +42,8 @@ const Profile = () => {
         
                 attempts.forEach(attempt => {
                     totalScore += attempt.score;
-                    totalPossible += attempt.totalQuestions;
-                    totalQuestionsAnswered += attempt.totalQuestions;
+                    totalPossible += attempt.totalquestions;
+                    totalQuestionsAnswered += attempt.totalquestions;
                 });
 
                 console.log("Total Score: ", totalScore);

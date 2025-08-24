@@ -53,7 +53,7 @@ router.get('/:userID', async (req, res) => {
       res.json({
           username: user.username,
           email: user.email,
-          joined: user.createdat // or format it if you want
+          joined: user.created_at // or format it if you want
       });
   } catch (error) {
       console.error('Error fetching user profile:', error);
