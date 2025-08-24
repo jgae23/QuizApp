@@ -72,7 +72,7 @@ router.get('/questions/:quizID', async (req, res) => {
 
   let { data: questions, error } = await supabase
     .from('questions')
-    .select('content')
+    .select('*')
     .eq('quizid', quizID)
     .single();
 

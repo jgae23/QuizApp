@@ -28,7 +28,7 @@ router.delete("/:attemptID/:explanationID/:quizID", async (req, res) => {
   }
 });
 
-router.delete("/:userID/:quizID/:explanationID", async (req, res) => {
+router.delete("/by-user", async (req, res) => {
     const { userID, quizID, explanationID } = req.params;
   
     try {

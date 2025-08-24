@@ -13,9 +13,11 @@ const RetakeQuiz = () => {
         const fetchQuestions = async () => {
             const BASE_URL = "https://quiz-backend-5rjf.onrender.com";
             try {
+                console.log("Retake Quiz ID:", quizID);
                 const response = await axios.get(`${BASE_URL}/api/quiz/questions/${quizID}`);
+                console.log("Retake Raw data response:", response);
                 const topic = response.data.title;
-                const questions = response.data.questions;
+                const questions = response.data.content;
                 const difficulty = response.data.difficulty;
 
                 console.log("Topic Quiz: ", topic);
