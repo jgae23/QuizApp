@@ -34,13 +34,14 @@ const AttemptPage = () => {
     fetchAttempts();
   }, [quizID, userID]);
 
-  const handleDelete = async (attemptID) => {
+  const handleDelete = async (attemptID, explanationID, quizID) => {
     if (!window.confirm("Are you sure you want to delete this attempt?")) return;
     console.log("Attempt ID: ", attemptID);
   
     try {
-      await axios.delete(`${BASE_URL}/api/delete/${attemptID}`);
+      await axios.delete(`${BASE_URL}/api/delete/${attemptID}/${explanationID}/${quizID}`);
       setAttempts((prev) => prev.filter((a) => a.attemptID !== attemptID));
+      window.location.reload(); // refresh the page
     } catch (err) {
       console.error("Failed to delete attempt:", err);
       alert("Something went wrong.");
@@ -105,7 +106,7 @@ const AttemptPage = () => {
                         cursor: 'pointer',
                         transition: 'background-color 0.3s',
                     }}
-                    onClick={() => handleDelete(attempt.attemptid)}
+                    onClick={() => handleDelete(attempt.attemptid, attempt.explanationid, attempt.quizid)}
                     onMouseOver={(e) => (e.currentTarget.style.backgroundColor = '#dc3545')} // bg-warning
                     onMouseOut={(e) => (e.currentTarget.style.backgroundColor = '#212529')}  // bg-danger
                     >

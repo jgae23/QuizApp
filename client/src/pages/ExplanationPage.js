@@ -43,7 +43,7 @@ const ExplanationPage = () => {
 
     return (
         <div className="container text-white mt-4 mb-4 p-4 rounded" style={{backgroundColor: "#1a1a1a"}} >
-            <h1 className="text-center mb-4" style={{ color: '#28a745' }}>{topic} Quiz</h1>
+            <h2 className="text-center mb-4" style={{ color: '#28a745' }}>{topic} Quiz</h2>
                 <QuizExplanations
                     quizData={quizData}
                     userAnswers={userAnswers}

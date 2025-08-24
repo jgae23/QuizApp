@@ -4,8 +4,8 @@ import supabase from "../config/supabaseServiceClient.js";
 
 const router = express.Router();
 
-router.delete("/:attemptID", async (req, res) => {
-  const { attemptID } = req.params;
+router.delete("/:attemptID/:explanationID/:quizID", async (req, res) => {
+  const { attemptID, explanationID, quizID } = req.params;
 
   try {
     const { data: deleted, error } = await supabase
@@ -14,6 +14,12 @@ router.delete("/:attemptID", async (req, res) => {
       .eq('attemptid', attemptID)
 
     if(error) return res.status(500).json({ error: error.message });
+
+    const { data, findError } = await supabase
+      .from('savedresults')
+      .delete()
+      .eq('explanationid', explanationID)
+      .eq('quizid', quizID)
 
     res.status(200).json({ message: "Attempt deleted successfully." });
   } catch (err) {

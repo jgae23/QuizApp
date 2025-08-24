@@ -13,9 +13,10 @@ import ExplanationPage from './pages/ExplanationPage';
 import AttemptPage from './pages/AttemptPage';
 import RetakeQuiz from './components/RetakeQuiz'
 import QuizSelection from "./components/QuizSelection";
+import PrivateRoute from "./components/PrivateRoute";
 
 function App() {
-  /*const isLogin = localStorage.getItem("isLogin") === "true";*/
+  //const isLogin = localStorage.getItem("isLogin");
   return (
     <BrowserRouter>
       <Routes>
@@ -25,12 +26,12 @@ function App() {
           <Route path="/QuizSelection" element={<QuizSelection />} />
           <Route path="/signup" element={<Signup />} />
           <Route path="/take-quiz" element={<TakeQuiz />} />
-          <Route path="/profile" element={<Profile />} />
-          <Route path="/my-quizzes" element={<MyQuizzes />} />
           <Route path="/quiz-generator/:type" element={<QuizGenerator />} />
-          <Route path="/attempts/:quizID" element={<AttemptPage />} />
-          <Route path="/attempts" element={<AttemptPage />} />
-          <Route path="/retake-quiz/:quizID" element={<RetakeQuiz />} />
+          <Route path="/profile" element={ <PrivateRoute> <Profile /> </PrivateRoute> } />
+          <Route path="/my-quizzes" element={ <PrivateRoute> <MyQuizzes /> </PrivateRoute> } />
+          <Route path="/attempts/:quizID" element={ <PrivateRoute> <AttemptPage /> </PrivateRoute> } />
+          <Route path="/attempts" element={ <PrivateRoute> <AttemptPage /> </PrivateRoute> } />
+          <Route path="/retake-quiz/:quizID" element={ <PrivateRoute> <RetakeQuiz /> </PrivateRoute> } />
           <Route path="/explanations/:explanationID" element={<ExplanationPage />} />
         </Route>
       </Routes>

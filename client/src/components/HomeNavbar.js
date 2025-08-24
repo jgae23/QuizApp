@@ -20,6 +20,7 @@ const HomeNavbar = () => {
     const handleLogout = () => {
         localStorage.removeItem("isLogin");
         setIsLoggedIn(false);
+        localStorage.clear();
         navigate("/login");
     };
 
