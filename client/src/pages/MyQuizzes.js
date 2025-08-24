@@ -30,9 +30,8 @@ const MyQuizzes = () => {
         console.log("Quiz ID: ", quizID);
       
         try {
-            await axios.delete("https://quiz-backend-5rjf.onrender.com/api/delete/by-user", {
-                data: { userID, quizID, explanationID }
-            });
+            await axios.delete(`https://quiz-backend-5rjf.onrender.com/api/delete/by-user/${userID}/${quizID}/${explanationID}`);
+            //console.log("Quiz deleted:", deleted);
             // delete successfully
             window.location.reload(); // refresh the page
         } catch (err) {

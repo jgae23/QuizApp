@@ -28,11 +28,10 @@ router.delete("/:attemptID/:explanationID/:quizID", async (req, res) => {
   }
 });
 
-router.delete("/by-user", async (req, res) => {
+router.delete("/by-user/:userID/:quizID/:explanationID", async (req, res) => {
     const { userID, quizID, explanationID } = req.params;
   
     try {
-    
       // Delete quiz result  
       const { data: deleted, error } = await supabase
         .from('savedresults')

@@ -78,7 +78,7 @@ router.get('/questions/:quizID', async (req, res) => {
 
     if(error) return res.status(500).json({ error: error.message });
   
-    return res.json(questions.content);
+    return res.json(questions);
   } catch (error) {
     console.error("Error fetching questions:", error);
     return res.status(500).json({ error: "Internal server error" });
